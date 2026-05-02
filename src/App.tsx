@@ -36,8 +36,7 @@ function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <h1>VATSIM Airport Board</h1>
-        <p>Airports loaded from data/airports.csv</p>
+        <h1>VATSIM Airport board: EGPH - Edinburgh Airport</h1>
       </header>
 
       {error && <div className="error">Error loading airports: {error}</div>}
@@ -45,7 +44,7 @@ function App() {
       <main>
         {route.name === 'home' && <AirportSelect airports={airports} />}
         {route.name === 'airport' && route.icao && (
-          <AirportBoard icao={route.icao} airports={airports} />
+          <AirportBoard icao={route.icao} />
         )}
       </main>
     </div>

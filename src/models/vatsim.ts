@@ -14,7 +14,14 @@ export interface VatsimPilot {
   callsign: string
   cid?: number | null
   flight_plan?: VatsimFlightPlan | null
-  // other fields are ignored for now
+  // common telemetry fields included as optional
+  latitude?: number | null
+  longitude?: number | null
+  groundspeed?: number | null
+  ground_speed?: number | null
+  gs?: number | null
+  // other fields are allowed
+  [key: string]: any
 }
 
 export interface VatsimData {

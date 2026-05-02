@@ -18,11 +18,14 @@ function normalizeFlightPlan(fp: any): VatsimFlightPlan {
 }
 
 function normalizePilot(p: any): VatsimPilot {
-  return {
-    callsign: safeStr(p.callsign ?? p.callsign ?? '') || (p.callsign ?? p.callsign ?? ''),
-    cid: p.cid ?? p.cid ?? null,
-    flight_plan: p.flight_plan ? normalizeFlightPlan(p.flight_plan) : (p.flightplan ? normalizeFlightPlan(p.flightplan) : null),
-  }
+  // preserve telemetry fields and include normalized flight_plan
+  const pilot: any = { ...p }
+  pilot.callsign = safeStr(pilot.callsign ?? '') || (pilot.callsign ?? '')
+  pilot.cid = pilot.cid ?? null
+  if (pilot.flight_plan) pilot.flight_plan = normalizeFlightPlan(pilot.flight_plan)
+  else if (pilot.flightplan) pilot.flight_plan = normalizeFlightPlan(pilot.flightplan)
+  else pilot.flight_plan = null
+  return pilot as VatsimPilot
 }
 
 export async function loadVatsimData(): Promise<VatsimData> {

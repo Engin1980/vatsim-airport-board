@@ -182,3 +182,13 @@
     border-right-color: var(--border);
   }
 }
+
+/* Header sizing adjustments */
+.app-header {
+  padding: 0.5rem 1rem;
+}
+.app-header h1 {
+  font-size: 1.5rem; /* adjusted title size */
+  margin: 0;
+  font-weight: 600;
+}
