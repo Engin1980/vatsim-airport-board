@@ -26,6 +26,17 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     return () => { mounted = false }
   }, [])
 
+  // Debug: log flight_plan for SHT 8V if present
+  useEffect(() => {
+    const csTargets = ['SHT 8V', 'SHT8V']
+    if (!data) return
+    const f = extractActiveFlightsPilots(data).find(p => csTargets.includes((p.callsign ?? '').toString()))
+    if (f) {
+      // eslint-disable-next-line no-console
+      console.log('DEBUG flight_plan for', f.callsign, f.flight_plan, f)
+    }
+  }, [data])
+
   if (error) return <div>Error loading VATSIM data: {error}</div>
   if (!data) return <div>Loading flights...</div>
 

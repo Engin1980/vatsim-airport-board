@@ -1,8 +1,10 @@
 export function parseDepTime(fp: any): Date | null {
   if (!fp) return null
+  // Common field names for departure time (include VATSIM 'deptime')
   const candidates = [
     'departure_time', 'dep_time', 'departuretime', 'departureTime', 'departure_time_utc', 'dep_time_utc', 'depdatetime',
-    'planned_departure_time', 'planned_dep_time', 'planned_departure', 'planned_departure_time_utc', 'departuretime_utc'
+    'planned_departure_time', 'planned_dep_time', 'planned_departure', 'planned_departure_time_utc', 'departuretime_utc',
+    'deptime', 'dep_time', 'depTime', 'etd', 'etd_time', 'estimated_departure'
   ]
   for (const k of candidates) {
     const v = fp[k]
@@ -11,8 +13,10 @@ export function parseDepTime(fp: any): Date | null {
     if (d) return d
   }
 
-  // Fallback: scan all fields for any value that looks like a time/date
+  // Fallback: scan only fields that likely represent times (avoid numeric fields like cruise_tas or altitude)
+  const timeLikeKey = /dep|depart|etd|eta|time|enroute/i
   for (const key of Object.keys(fp)) {
+    if (!timeLikeKey.test(key)) continue
     const v = fp[key]
     const d = tryParseDateValue(v)
     if (d) return d
@@ -72,8 +76,16 @@ function tryParseEnroute(v: any): number | null {
   if (v === undefined || v === null) return null
   if (typeof v === 'number') return Math.round(v)
   if (typeof v === 'string') {
+    // HH:MM
     const m = v.match(/^(\d+):(\d{2})$/)
     if (m) return parseInt(m[1],10)*60 + parseInt(m[2],10)
+    // HHMM or HMM (e.g. "0054" -> 54, "130" -> 1:30)
+    if (/^\d{3,4}$/.test(v)) {
+      const s = v.padStart(4, '0')
+      const hh = parseInt(s.slice(0,2), 10)
+      const mm = parseInt(s.slice(2), 10)
+      return hh*60 + mm
+    }
     const n = Number(v)
     if (!isNaN(n)) return Math.round(n)
   }
