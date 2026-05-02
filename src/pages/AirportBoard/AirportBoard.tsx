@@ -13,6 +13,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [data, setData] = useState<VatsimData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [airportsMap, setAirportsMap] = useState<Map<string, any> | null>(null)
+  const [showAllDepartures, setShowAllDepartures] = useState<boolean>(false)
 
   useEffect(() => {
     let mounted = true
@@ -179,13 +180,28 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     const speedRaw = (p as any).groundspeed ?? (p as any).ground_speed ?? (p as any).gs
     const speed: number | null = (speedRaw === undefined || speedRaw === null) ? null : Number(speedRaw)
     const state = computeDepartureState(p)
-    return { p, time, state, speed, dist }
+    // compute departure delay: if Gate Open and planned time passed, show Delayed (+HH:MM) rounding up to tens
+    let delayText: string = ''
+    if (state === 'Gate Open' && time) {
+      const now = new Date()
+      if (now.getTime() > time.getTime()) {
+        const diffMin = Math.ceil((now.getTime() - time.getTime()) / 60000)
+        const rounded = Math.ceil(diffMin / 10) * 10 // round up to next 10 minutes
+        const hh = Math.floor(rounded / 60)
+        const mm = rounded % 60
+        delayText = `Delayed (+${hh}:${mm.toString().padStart(2,'0')})`
+      }
+    }
+    return { p, time, state, speed, dist, delayText }
   }).sort((a,b) => {
     if (a.time === null && b.time === null) return a.p.callsign.localeCompare(b.p.callsign)
     if (a.time === null) return 1
     if (b.time === null) return -1
     return a.time.getTime() - b.time.getTime()
   })
+
+  // filter departures based on checkbox: show all or only those within 50 NM
+  const displayedDepartures = departuresWithTime.filter(d => showAllDepartures || (d.dist !== null && d.dist <= 50))
 
 
   return (
@@ -235,11 +251,12 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               <th>Speed (kts)</th>
               <th>Dist (NM)</th>
               <th>State</th>
+              <th>Delay</th>
               <th>FullTime</th>
             </tr>
           </thead>
           <tbody>
-            {departuresWithTime.map(({p, time, state, speed, dist}, idx) => {
+            {displayedDepartures.map(({p, time, state, speed, dist, delayText}, idx) => {
               const dest = p.flight_plan?.arrival ?? '—'
               const full = time ? formatFullTime(time) : '—'
               const local = time ? formatTime(time) : '—'
@@ -252,6 +269,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <td>{(speed !== null && Number.isFinite(speed)) ? Math.round(speed) : '—'}</td>
                   <td>{dist !== null ? dist.toFixed(1) : '—'}</td>
                   <td>{state}</td>
+                  <td>{delayText}</td>
                   <td>{full}</td>
                 </tr>
               )
@@ -259,6 +277,13 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </tbody>
         </table>
       </section>
+
+      <div style={{marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee'}}>
+        <label style={{display:'inline-flex',alignItems:'center',gap:'0.5rem'}}>
+          <input type="checkbox" checked={showAllDepartures} onChange={e => setShowAllDepartures(e.target.checked)} />
+          <span>Zobrazit všechny odlety (včetně vzdálenějších než 50 NM)</span>
+        </label>
+      </div>
     </div>
   )
 }
