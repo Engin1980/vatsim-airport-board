@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { VatsimData, VatsimPilot } from '../../models/vatsim'
 import { loadVatsimData, extractActiveFlightsPilots } from '../../services/vatsimService'
 import './ActiveFlights.css'

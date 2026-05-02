@@ -1,13 +1,22 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
-import AirportList from './components/AirportList/AirportList'
-import ActiveFlights from './components/ActiveFlights/ActiveFlights'
 import { loadAirports } from './services/airportService'
 import type { Airport } from './models/airport'
+import AirportSelect from './pages/AirportSelect/AirportSelect'
+import AirportBoard from './pages/AirportBoard/AirportBoard'
+
+function getRoute() {
+  const h = location.hash || ''
+  if (!h) return { name: 'home' }
+  const m = h.match(/^#\/airport\/(.+)$/)
+  if (m) return { name: 'airport', icao: decodeURIComponent(m[1]) }
+  return { name: 'home' }
+}
 
 function App() {
   const [airports, setAirports] = useState<Map<string, Airport> | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [route, setRoute] = useState(getRoute())
 
   useEffect(() => {
     loadAirports()
@@ -16,6 +25,12 @@ function App() {
         console.error('Failed to load airports', err)
         setError(String(err))
       })
+  }, [])
+
+  useEffect(() => {
+    const onHash = () => setRoute(getRoute())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   return (
@@ -28,14 +43,10 @@ function App() {
       {error && <div className="error">Error loading airports: {error}</div>}
 
       <main>
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-          <div>
-            <AirportList airports={airports} />
-          </div>
-          <div>
-            <ActiveFlights />
-          </div>
-        </div>
+        {route.name === 'home' && <AirportSelect airports={airports} />}
+        {route.name === 'airport' && route.icao && (
+          <AirportBoard icao={route.icao} airports={airports} />
+        )}
       </main>
     </div>
   )

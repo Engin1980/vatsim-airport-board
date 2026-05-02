@@ -39,6 +39,15 @@ Implemented helper: a CSV parser and loader were added at src/services/airportSe
 
 Added VATSIM data loader: the app now fetches the VATSIM v3 feed from https://data.vatsim.net/v3/vatsim-data.json. A new model file src/models/vatsim.ts describes VATSIM data shapes and src/services/vatsimService.ts exposes loadVatsimData(): Promise<VatsimData> plus extractActiveFlightsPilots(). The service extracts `general.update`, `pilots` and `profiles` (handles several possible key names).
 
+Routing and pages:
+- Implemented simple hash-based routing in src/App.tsx. Home (root) shows an airport selector built from data/airports.csv. Clicking an airport navigates to #/airport/ICAO.
+- Added pages:
+  - src/pages/AirportSelect: lists airports and links to the board page.
+  - src/pages/AirportBoard: renders two tables (arrivals and departures) for the selected ICAO. Each row shows callsign, origin/destination ICAO, and an expected time computed from the flight plan when available.
+
+Time helpers:
+- Added src/utils/flightTime.ts with tolerant parsers for departure times and enroute durations and helpers to format/compute arrival times.
+
 Notes for future work:
 - The airport map is keyed by ICAO for fast lookup; use Map.get(icao) for O(1) resolution when rendering flight rows.
 - The service uses a small CSV parser that correctly handles quoted fields; if CSV size causes performance issues, consider moving parsing to a build step or server-side preprocessing.
