@@ -31,8 +31,16 @@ Tests: No test script or test runner is configured in package.json. If tests are
 
 ## Project-specific data inputs
 - Flights JSON: The app consumes a JSON file with the current flights board. Provide the JSON file to the assistant when ready. Recommended placement during development: src/data/flights.json. Alternatively, serve it from a local API endpoint.
-- Airports list: The repository uses an airports CSV at @data/airports.csv. It should include standard identifiers (IATA/ICAO), airport name, city, and country so the app can resolve display names from flight records that reference airports by code.
+- Airports list: The repository uses an airports CSV at data/airports.csv. It should include standard identifiers (IATA/ICAO), airport name, city, and country so the app can resolve display names from flight records that reference airports by code.
 
 Assistant note: The maintainer will supply the flights JSON later; the assistant has saved this context for subsequent tasks and will use the airports CSV to resolve airport names.
+
+Implemented helper: a CSV parser and loader were added at src/services/airportService.ts which loads data/airports.csv at runtime and exposes loadAirports(): Promise<Map<string, Airport>> and airportsToArray(). Type definitions live at src/models/airport.ts. A UI component that lists airports by ICAO was added at src/components/AirportList/AirportList.tsx and is loaded at app startup (App.tsx calls loadAirports on mount).
+
+Added VATSIM data loader: the app now fetches the VATSIM v3 feed from https://data.vatsim.net/v3/vatsim-data.json. A new model file src/models/vatsim.ts describes VATSIM data shapes and src/services/vatsimService.ts exposes loadVatsimData(): Promise<VatsimData> plus extractActiveFlightsPilots(). The service extracts `general.update`, `pilots` and `profiles` (handles several possible key names).
+
+Notes for future work:
+- The airport map is keyed by ICAO for fast lookup; use Map.get(icao) for O(1) resolution when rendering flight rows.
+- The service uses a small CSV parser that correctly handles quoted fields; if CSV size causes performance issues, consider moving parsing to a build step or server-side preprocessing.
 
 If you want, I can also create a simple CI workflow or add a Playwright (or other) MCP server configuration to exercise the app in a browser. Would you like an MCP server configured for end-to-end testing (e.g., Playwright)?
