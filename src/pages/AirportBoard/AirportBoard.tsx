@@ -79,7 +79,33 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     const speedRaw = (p as any).groundspeed ?? (p as any).ground_speed ?? (p as any).gs
     const speed: number | null = (speedRaw === undefined || speedRaw === null) ? null : Number(speedRaw)
     const state = computeArrivalState(p)
-    return { p, time, state, speed, dist }
+    // expected arrival based on current position + groundspeed, plus fixed 10 minutes
+    let expected: Date | null = null
+    if (dist !== null && speed !== null && speed > 0) {
+      const minutesToGo = dist / speed * 60 // hours->minutes
+      expected = new Date(Date.now() + Math.round((minutesToGo + 10) * 60000))
+    }
+    // compute delay text: compare expected to planned arrival (time)
+    let delayText: string = ''
+    if (expected && time) {
+      const diffMin = Math.round((expected.getTime() - time.getTime()) / 60000)
+      if (diffMin > 10) {
+        const rounded = Math.round(diffMin / 10) * 10
+        const hh = Math.floor(rounded / 60)
+        const mm = rounded % 60
+        const hhmm = `${hh}:${mm.toString().padStart(2,'0')}`
+        delayText = `Delayed (+${hhmm})`
+      } else {
+        // no meaningful delay
+        delayText = ''
+      }
+    } else if (expected) {
+      // no planned arrival to compare, still show expected time
+      delayText = `Exp ${formatTime(expected)}`
+    } else {
+      delayText = ''
+    }
+    return { p, time, state, speed, dist, expected, delayText }
   }).sort((a,b) => {
     if (a.time === null && b.time === null) return a.p.callsign.localeCompare(b.p.callsign)
     if (a.time === null) return 1
@@ -173,11 +199,12 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               <th>Callsign</th>
               <th>Origin (ICAO)</th>
               <th>State</th>
+              <th>Delay</th>
               <th>FullTime</th>
             </tr>
           </thead>
           <tbody>
-            {arrivalsWithTime.map(({p, time, state, speed, dist}, idx) => {
+            {arrivalsWithTime.map(({p, time, state, speed, dist, expected, delayText}, idx) => {
               const origin = p.flight_plan?.departure ?? '—'
               const full = time ? formatFullTime(time) : '—'
               const local = time ? formatTime(time) : '—'
@@ -188,6 +215,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <td>{cs}</td>
                   <td>{origin}</td>
                   <td>{state}</td>
+                  <td>{delayText}</td>
                   <td>{full}</td>
                 </tr>
               )
