@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Airport } from '../../models/airport'
 import type { VatsimData, VatsimPilot } from '../../models/vatsim'
 import { loadVatsimData, extractActiveFlightsPilots } from '../../services/vatsimService'
-import { parseDepTime, computeArrival, formatTime } from '../../utils/flightTime'
+import { parseDepTime, computeArrival, formatTime, formatFullTime } from '../../utils/flightTime'
 
 export interface AirportBoardProps {
   icao: string
@@ -27,6 +27,23 @@ export default function AirportBoard({ icao, airports }: AirportBoardProps) {
   const arrivals = pilots.filter(p => (p.flight_plan?.arrival ?? '').toUpperCase() === icao.toUpperCase())
   const departures = pilots.filter(p => (p.flight_plan?.departure ?? '').toUpperCase() === icao.toUpperCase())
 
+  // compute times and sort ascending (null times last)
+  const arrivalsWithTime = arrivals.map(p => ({ p, time: computeArrival(p.flight_plan) }))
+    .sort((a,b) => {
+      if (a.time === null && b.time === null) return a.p.callsign.localeCompare(b.p.callsign)
+      if (a.time === null) return 1
+      if (b.time === null) return -1
+      return a.time.getTime() - b.time.getTime()
+    })
+
+  const departuresWithTime = departures.map(p => ({ p, time: parseDepTime(p.flight_plan) }))
+    .sort((a,b) => {
+      if (a.time === null && b.time === null) return a.p.callsign.localeCompare(b.p.callsign)
+      if (a.time === null) return 1
+      if (b.time === null) return -1
+      return a.time.getTime() - b.time.getTime()
+    })
+
   const airportName = airports?.get(icao.toUpperCase())?.name ?? ''
 
   return (
@@ -39,19 +56,21 @@ export default function AirportBoard({ icao, airports }: AirportBoardProps) {
             <tr>
               <th>Callsign</th>
               <th>Origin (ICAO)</th>
-              <th>Estimated Arrival</th>
+              <th>FullTime</th>
+              <th>LocalTime</th>
             </tr>
           </thead>
           <tbody>
-            {arrivals.map((p, idx) => {
+            {arrivalsWithTime.map(({p, time}, idx) => {
               const origin = p.flight_plan?.departure ?? '—'
-              const arrivalDate = computeArrival(p.flight_plan)
-              const arrivalStr = arrivalDate ? formatTime(arrivalDate) : '—'
+              const full = time ? formatFullTime(time) : '—'
+              const local = time ? formatTime(time) : '—'
               return (
                 <tr key={`${p.callsign}-arr-${idx}`}>
                   <td>{p.callsign}</td>
                   <td>{origin}</td>
-                  <td>{arrivalStr}</td>
+                  <td>{full}</td>
+                  <td>{local}</td>
                 </tr>
               )
             })}
@@ -66,19 +85,21 @@ export default function AirportBoard({ icao, airports }: AirportBoardProps) {
             <tr>
               <th>Callsign</th>
               <th>Destination (ICAO)</th>
-              <th>Scheduled Departure</th>
+              <th>FullTime</th>
+              <th>LocalTime</th>
             </tr>
           </thead>
           <tbody>
-            {departures.map((p, idx) => {
+            {departuresWithTime.map(({p, time}, idx) => {
               const dest = p.flight_plan?.arrival ?? '—'
-              const depDate = parseDepTime(p.flight_plan)
-              const depStr = depDate ? formatTime(depDate) : '—'
+              const full = time ? formatFullTime(time) : '—'
+              const local = time ? formatTime(time) : '—'
               return (
                 <tr key={`${p.callsign}-dep-${idx}`}>
                   <td>{p.callsign}</td>
                   <td>{dest}</td>
-                  <td>{depStr}</td>
+                  <td>{full}</td>
+                  <td>{local}</td>
                 </tr>
               )
             })}

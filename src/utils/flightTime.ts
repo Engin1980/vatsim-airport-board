@@ -82,7 +82,28 @@ function tryParseEnroute(v: any): number | null {
 
 export function formatTime(d: Date | null): string {
   if (!d) return '—'
-  return d.toISOString().replace('T',' ').replace(/:00\.000Z$/,' UTC').replace(/Z$/,' UTC')
+  try {
+    // Local HH:MM (24h)
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch (e) {
+    return '—'
+  }
+}
+
+export function formatFullTime(d: Date | null): string {
+  if (!d) return '—'
+  try {
+    return d.toLocaleString([], {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (e) {
+    return d.toISOString()
+  }
 }
 
 export function computeArrival(fp: any): Date | null {
