@@ -9,7 +9,7 @@ export interface AirportBoardProps {
   icao: string
 }
 
-export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
+const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [data, setData] = useState<VatsimData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [airportsMap, setAirportsMap] = useState<Map<string, any> | null>(null)
@@ -223,7 +223,7 @@ export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             <tr>
               <th>LocalTime</th>
               <th>Callsign</th>
-              <th>Origin (ICAO)</th>
+              <th>Město / Název</th>
               <th>State</th>
               <th>Delay</th>
               <th>FullTime</th>
@@ -234,7 +234,11 @@ export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               const item = displayedArrivals[idx]
               if (item) {
                 const {p, time, state, speed, dist, expected, delayText} = item
-                const origin = p.flight_plan?.departure ?? '—'
+                const originIcao = p.flight_plan?.departure ?? null
+                const originAirport = originIcao ? getAirportCoords(originIcao) : null
+                let originName = originAirport?.name ?? null
+                if (originName && originName.endsWith(' Airport')) originName = originName.slice(0, -' Airport'.length)
+                const originLabel = originName ?? originIcao ?? '—'
                 const full = time ? formatFullTime(time) : '—'
                 const local = time ? formatTime(time) : '—'
                 const cs = splitCallsign(p.callsign)
@@ -242,7 +246,7 @@ export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <tr key={`${p.callsign}-arr-${idx}`}>
                     <td>{renderCell(local)}</td>
                     <td>{renderCell(cs)}</td>
-                    <td>{renderCell(origin)}</td>
+                    <td>{renderCell(originLabel)}</td>
                     <td>{renderCell(state)}</td>
                     <td>{renderCell(delayText)}</td>
                     <td>{renderCell(full)}</td>
@@ -272,7 +276,7 @@ export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             <tr>
               <th>LocalTime</th>
               <th>Callsign</th>
-              <th>Destination (ICAO)</th>
+              <th>Město / Název</th>
               <th>Speed (kts)</th>
               <th>Dist (NM)</th>
               <th>State</th>
@@ -285,7 +289,11 @@ export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               const item = displayedDepartures[idx]
               if (item) {
                 const {p, time, state, speed, dist, delayText} = item
-                const dest = p.flight_plan?.arrival ?? '—'
+                const destIcao = p.flight_plan?.arrival ?? null
+                const destAirport = destIcao ? getAirportCoords(destIcao) : null
+                let destName = destAirport?.name ?? null
+                if (destName && destName.endsWith(' Airport')) destName = destName.slice(0, -' Airport'.length)
+                const destLabel = destName ?? destIcao ?? '—'
                 const full = time ? formatFullTime(time) : '—'
                 const local = time ? formatTime(time) : '—'
                 const cs = splitCallsign(p.callsign)
@@ -293,7 +301,7 @@ export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <tr key={`${p.callsign}-dep-${idx}`}>
                     <td>{renderCell(local)}</td>
                     <td>{renderCell(cs)}</td>
-                    <td>{renderCell(dest)}</td>
+                    <td>{renderCell(destLabel)}</td>
                     <td>{renderCell((speed !== null && Number.isFinite(speed)) ? Math.round(speed) : null)}</td>
                     <td>{renderCell(dist !== null ? dist.toFixed(1) : null)}</td>
                     <td>{renderCell(state)}</td>
