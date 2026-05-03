@@ -51,7 +51,6 @@
 }
 
 #root {
-  width: 1126px;
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
@@ -104,8 +103,47 @@ code,
 }
 
 code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Airport board styling overrides: black background and white text */
+section table {
+  background: #000;
+  color: #fff;
+}
+section table th,
+section table td {
+  background: #000;
+  color: #fff;
+  border: 1px solid #111;
+  /* padding: 0.4rem 0.4rem; */
+  text-align: left;
+  vertical-align: middle;
+}
+section table thead th {
+  background: #555;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Ticker-board overrides: smaller letters and dark theme */
+ul.board {
+  /* force a smaller base size for ticker letters */
+  font-size: 1.2rem !important;
+  max-width: none;
+}
+
+ul.board li div.ticker-row {
+  padding: 1.1rem !important;
+}
+
+span.ticker {
+  color: #FF0 !important;
+  padding: 0.2rem 0.2rem !important;
+}
+
+/* ensure the board sits well inside table cells */
+.board {
+  display: inline-block;
+}
+
