@@ -9,11 +9,12 @@ export interface AirportBoardProps {
   icao: string
 }
 
-const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
+export const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [data, setData] = useState<VatsimData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [airportsMap, setAirportsMap] = useState<Map<string, any> | null>(null)
   const [showAllDepartures, setShowAllDepartures] = useState<boolean>(false)
+  const [rowsCount, setRowsCount] = useState<number>(10)
 
   useEffect(() => {
     let mounted = true
@@ -114,6 +115,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     return a.time.getTime() - b.time.getTime()
   })
 
+  const displayedArrivals = arrivalsWithTime.slice(0, rowsCount)
+
   const SPEED_THRESHOLD = 40 // knots
   const DIST_THRESHOLD_NM = 5 // nautical miles
   const NOT_MOVING_THRESHOLD = 0.5 // knots
@@ -142,6 +145,13 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   function getAirportCoords(icao: string) {
     if (!airportsMap) return null
     return airportsMap.get(icao.toUpperCase()) || null
+  }
+
+  // Render cell with non-breaking space for empty/null/placeholder values
+  function renderCell(v: any) {
+    if (v === undefined || v === null) return '\u00A0'
+    if (typeof v === 'string' && (v === '' || v === '—')) return '\u00A0'
+    return v
   }
 
   function computeDepartureState(p: any): string {
@@ -220,19 +230,34 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             </tr>
           </thead>
           <tbody>
-            {arrivalsWithTime.map(({p, time, state, speed, dist, expected, delayText}, idx) => {
-              const origin = p.flight_plan?.departure ?? '—'
-              const full = time ? formatFullTime(time) : '—'
-              const local = time ? formatTime(time) : '—'
-              const cs = splitCallsign(p.callsign)
+            {Array.from({length: rowsCount}).map((_, idx) => {
+              const item = displayedArrivals[idx]
+              if (item) {
+                const {p, time, state, speed, dist, expected, delayText} = item
+                const origin = p.flight_plan?.departure ?? '—'
+                const full = time ? formatFullTime(time) : '—'
+                const local = time ? formatTime(time) : '—'
+                const cs = splitCallsign(p.callsign)
+                return (
+                  <tr key={`${p.callsign}-arr-${idx}`}>
+                    <td>{renderCell(local)}</td>
+                    <td>{renderCell(cs)}</td>
+                    <td>{renderCell(origin)}</td>
+                    <td>{renderCell(state)}</td>
+                    <td>{renderCell(delayText)}</td>
+                    <td>{renderCell(full)}</td>
+                  </tr>
+                )
+              }
+              // empty row placeholder
               return (
-                <tr key={`${p.callsign}-arr-${idx}`}>
-                  <td>{local}</td>
-                  <td>{cs}</td>
-                  <td>{origin}</td>
-                  <td>{state}</td>
-                  <td>{delayText}</td>
-                  <td>{full}</td>
+                <tr key={`empty-arr-${idx}`}>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
                 </tr>
               )
             })}
@@ -256,21 +281,37 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             </tr>
           </thead>
           <tbody>
-            {displayedDepartures.map(({p, time, state, speed, dist, delayText}, idx) => {
-              const dest = p.flight_plan?.arrival ?? '—'
-              const full = time ? formatFullTime(time) : '—'
-              const local = time ? formatTime(time) : '—'
-              const cs = splitCallsign(p.callsign)
+            {Array.from({length: rowsCount}).map((_, idx) => {
+              const item = displayedDepartures[idx]
+              if (item) {
+                const {p, time, state, speed, dist, delayText} = item
+                const dest = p.flight_plan?.arrival ?? '—'
+                const full = time ? formatFullTime(time) : '—'
+                const local = time ? formatTime(time) : '—'
+                const cs = splitCallsign(p.callsign)
+                return (
+                  <tr key={`${p.callsign}-dep-${idx}`}>
+                    <td>{renderCell(local)}</td>
+                    <td>{renderCell(cs)}</td>
+                    <td>{renderCell(dest)}</td>
+                    <td>{renderCell((speed !== null && Number.isFinite(speed)) ? Math.round(speed) : null)}</td>
+                    <td>{renderCell(dist !== null ? dist.toFixed(1) : null)}</td>
+                    <td>{renderCell(state)}</td>
+                    <td>{renderCell(delayText)}</td>
+                    <td>{renderCell(full)}</td>
+                  </tr>
+                )
+              }
               return (
-                <tr key={`${p.callsign}-dep-${idx}`}>
-                  <td>{local}</td>
-                  <td>{cs}</td>
-                  <td>{dest}</td>
-                  <td>{(speed !== null && Number.isFinite(speed)) ? Math.round(speed) : '—'}</td>
-                  <td>{dist !== null ? dist.toFixed(1) : '—'}</td>
-                  <td>{state}</td>
-                  <td>{delayText}</td>
-                  <td>{full}</td>
+                <tr key={`empty-dep-${idx}`}>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
+                  <td>{renderCell(null)}</td>
                 </tr>
               )
             })}
@@ -278,10 +319,14 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
         </table>
       </section>
 
-      <div style={{marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee'}}>
+      <div style={{marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee', display:'flex', gap:'1rem', alignItems:'center', flexWrap:'wrap'}}>
         <label style={{display:'inline-flex',alignItems:'center',gap:'0.5rem'}}>
           <input type="checkbox" checked={showAllDepartures} onChange={e => setShowAllDepartures(e.target.checked)} />
           <span>Zobrazit všechny odlety (včetně vzdálenějších než 50 NM)</span>
+        </label>
+        <label style={{display:'inline-flex',alignItems:'center',gap:'0.5rem'}}>
+          <span>Počet řádků:</span>
+          <input type="number" min={1} value={rowsCount} onChange={e => { const v = parseInt(e.target.value || '10',10); setRowsCount(isNaN(v) ? 10 : Math.max(1, v)) }} style={{width:'4rem'}} />
         </label>
       </div>
     </div>
