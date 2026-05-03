@@ -19,6 +19,7 @@ const TICKER_WIDTHS = {
   callsign: 8,
   name: 30,
   state: 10,
+  delay: 6,
 };
 
 function padTickerText(v: any, width: number) {
@@ -26,6 +27,20 @@ function padTickerText(v: any, width: number) {
   const trimmed = s.length > width ? s.slice(0, width) : s;
   // use non-breaking spaces so empty tiles remain visible
   return trimmed.padEnd(width, "\u00A0");
+}
+
+function formatDelayForCell(delayText: string): string {
+  if (!delayText) return "";
+  // match patterns like "Delayed (+01:20)"
+  const delayedMatch = /\(\+(\d{1,2}:\d{2})\)/.exec(delayText);
+  if (delayedMatch) return `+${delayedMatch[1]}`;
+  // match explicit +HH:MM anywhere
+  const plusMatch = /(\+\d{1,2}:\d{2})/.exec(delayText);
+  if (plusMatch) return plusMatch[1];
+  // match Exp HH:MM -> return HH:MM (no plus)
+  const expMatch = /^Exp\s+(\d{1,2}:\d{2})/.exec(delayText);
+  if (expMatch) return expMatch[1];
+  return "";
 }
 
 export interface AirportBoardProps {
@@ -391,7 +406,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                     <td><TickerCell text={padTickerText(cs, TICKER_WIDTHS.callsign)} /></td>
                     <td><TickerCell text={padTickerText(originLabel, TICKER_WIDTHS.name)} /></td>
                     <td><TickerCell text={padTickerText(state || '', TICKER_WIDTHS.state)} /></td>
-                    <td><TickerCell text={delayText || ''} /></td>
+                    <td><TickerCell text={padTickerText(formatDelayForCell(delayText || ''), TICKER_WIDTHS.delay)} /></td>
                   </tr>
                 );
               }
@@ -402,7 +417,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.callsign)} /></td>
                   <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.name)} /></td>
                   <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.state)} /></td>
-                  <td>{renderCell(null)}</td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.delay)} /></td>
                 </tr>
               );
             })}
@@ -443,7 +458,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                     <td><TickerCell text={padTickerText(cs, TICKER_WIDTHS.callsign)} /></td>
                     <td><TickerCell text={padTickerText(destLabel, TICKER_WIDTHS.name)} /></td>
                     <td><TickerCell text={padTickerText(state || '', TICKER_WIDTHS.state)} /></td>
-                    <td><TickerCell text={delayText || ''} /></td>
+                    <td><TickerCell text={padTickerText(formatDelayForCell(delayText || ''), TICKER_WIDTHS.delay)} /></td>
                   </tr>
                 );
               }
@@ -453,7 +468,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.callsign)} /></td>
                   <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.name)} /></td>
                   <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.state)} /></td>
-                  <td>{renderCell(null)}</td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.delay)} /></td>
                 </tr>
               );
             })}
