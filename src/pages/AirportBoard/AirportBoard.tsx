@@ -12,6 +12,7 @@ import {
 } from "../../utils/flightTime";
 import { splitCallsign } from "../../utils/callsign";
 import { loadAirports } from "../../services/airportService";
+import TickerCell from './TickerCell';
 
 export interface AirportBoardProps {
   icao: string;
@@ -360,8 +361,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             {Array.from({ length: rowsCount }).map((_, idx) => {
               const item = displayedArrivals[idx];
               if (item) {
-                const { p, time, state, speed, dist, expected, delayText } =
-                  item;
+                const { p, time, state, delayText } = item;
                 const originIcao = p.flight_plan?.departure ?? null;
                 const originAirport = originIcao
                   ? getAirportCoords(originIcao)
@@ -376,10 +376,10 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 return (
                   <tr key={`${p.callsign}-arr-${idx}`}>
                     <td>{renderCell(local)}</td>
-                    <td>{renderCell(cs)}</td>
-                    <td>{renderCell(originLabel)}</td>
-                    <td>{renderCell(state)}</td>
-                    <td>{renderCell(delayText)}</td>
+                    <td><TickerCell text={cs} /></td>
+                    <td><TickerCell text={originLabel} /></td>
+                    <td><TickerCell text={state || ''} /></td>
+                    <td><TickerCell text={delayText || ''} /></td>
                     <td>{renderCell(full)}</td>
                   </tr>
                 );
@@ -434,8 +434,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 return (
                   <tr key={`${p.callsign}-dep-${idx}`}>
                     <td>{renderCell(local)}</td>
-                    <td>{renderCell(cs)}</td>
-                    <td>{renderCell(destLabel)}</td>
+                    <td><TickerCell text={cs} /></td>
+                    <td><TickerCell text={destLabel} /></td>
                     <td>
                       {renderCell(
                         speed !== null && Number.isFinite(speed)
@@ -446,8 +446,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                     <td>
                       {renderCell(dist !== null ? dist.toFixed(1) : null)}
                     </td>
-                    <td>{renderCell(state)}</td>
-                    <td>{renderCell(delayText)}</td>
+                    <td><TickerCell text={state || ''} /></td>
+                    <td><TickerCell text={delayText || ''} /></td>
                     <td>{renderCell(full)}</td>
                   </tr>
                 );
