@@ -8,11 +8,25 @@ import {
   parseDepTime,
   computeArrival,
   formatTime,
-  formatFullTime,
 } from "../../utils/flightTime";
 import { splitCallsign } from "../../utils/callsign";
 import { loadAirports } from "../../services/airportService";
 import TickerCell from './TickerCell';
+
+// Fixed ticker widths (characters) — easy to change
+const TICKER_WIDTHS = {
+  localTime: 5,
+  callsign: 8,
+  name: 30,
+  state: 10,
+};
+
+function padTickerText(v: any, width: number) {
+  const s = v === undefined || v === null ? "" : String(v);
+  const trimmed = s.length > width ? s.slice(0, width) : s;
+  // use non-breaking spaces so empty tiles remain visible
+  return trimmed.padEnd(width, "\u00A0");
+}
 
 export interface AirportBoardProps {
   icao: string;
@@ -354,7 +368,6 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               <th>Město / Název</th>
               <th>State</th>
               <th>Delay</th>
-              <th>FullTime</th>
             </tr>
           </thead>
           <tbody>
@@ -370,28 +383,25 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 if (originName && originName.endsWith(" Airport"))
                   originName = originName.slice(0, -" Airport".length);
                 const originLabel = originName ?? originIcao ?? "—";
-                const full = time ? formatFullTime(time) : "—";
                 const local = time ? formatTime(time) : "—";
                 const cs = splitCallsign(p.callsign);
                 return (
                   <tr key={`${p.callsign}-arr-${idx}`}>
-                    <td>{renderCell(local)}</td>
-                    <td><TickerCell text={cs} /></td>
-                    <td><TickerCell text={originLabel} /></td>
-                    <td><TickerCell text={state || ''} /></td>
+                    <td><TickerCell text={padTickerText(local, TICKER_WIDTHS.localTime)} /></td>
+                    <td><TickerCell text={padTickerText(cs, TICKER_WIDTHS.callsign)} /></td>
+                    <td><TickerCell text={padTickerText(originLabel, TICKER_WIDTHS.name)} /></td>
+                    <td><TickerCell text={padTickerText(state || '', TICKER_WIDTHS.state)} /></td>
                     <td><TickerCell text={delayText || ''} /></td>
-                    <td>{renderCell(full)}</td>
                   </tr>
                 );
               }
               // empty row placeholder
               return (
                 <tr key={`empty-arr-${idx}`}>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.localTime)} /></td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.callsign)} /></td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.name)} /></td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.state)} /></td>
                   <td>{renderCell(null)}</td>
                 </tr>
               );
@@ -408,18 +418,15 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               <th>LocalTime</th>
               <th>Callsign</th>
               <th>Město / Název</th>
-              <th>Speed (kts)</th>
-              <th>Dist (NM)</th>
               <th>State</th>
               <th>Delay</th>
-              <th>FullTime</th>
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: rowsCount }).map((_, idx) => {
               const item = displayedDepartures[idx];
               if (item) {
-                const { p, time, state, speed, dist, delayText } = item;
+                const { p, time, state, delayText } = item;
                 const destIcao = p.flight_plan?.arrival ?? null;
                 const destAirport = destIcao
                   ? getAirportCoords(destIcao)
@@ -427,40 +434,25 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 let destName = destAirport?.name ?? null;
                 if (destName && destName.endsWith(" Airport"))
                   destName = destName.slice(0, -" Airport".length);
-                const destLabel = destName ?? destIcao ?? "—";
-                const full = time ? formatFullTime(time) : "—";
+                const destLabel = destName ?? "—";
                 const local = time ? formatTime(time) : "—";
                 const cs = splitCallsign(p.callsign);
                 return (
                   <tr key={`${p.callsign}-dep-${idx}`}>
-                    <td>{renderCell(local)}</td>
-                    <td><TickerCell text={cs} /></td>
-                    <td><TickerCell text={destLabel} /></td>
-                    <td>
-                      {renderCell(
-                        speed !== null && Number.isFinite(speed)
-                          ? Math.round(speed)
-                          : null,
-                      )}
-                    </td>
-                    <td>
-                      {renderCell(dist !== null ? dist.toFixed(1) : null)}
-                    </td>
-                    <td><TickerCell text={state || ''} /></td>
+                    <td><TickerCell text={padTickerText(local, TICKER_WIDTHS.localTime)} /></td>
+                    <td><TickerCell text={padTickerText(cs, TICKER_WIDTHS.callsign)} /></td>
+                    <td><TickerCell text={padTickerText(destLabel, TICKER_WIDTHS.name)} /></td>
+                    <td><TickerCell text={padTickerText(state || '', TICKER_WIDTHS.state)} /></td>
                     <td><TickerCell text={delayText || ''} /></td>
-                    <td>{renderCell(full)}</td>
                   </tr>
                 );
               }
               return (
                 <tr key={`empty-dep-${idx}`}>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
-                  <td>{renderCell(null)}</td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.localTime)} /></td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.callsign)} /></td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.name)} /></td>
+                  <td><TickerCell text={padTickerText(null, TICKER_WIDTHS.state)} /></td>
                   <td>{renderCell(null)}</td>
                 </tr>
               );
