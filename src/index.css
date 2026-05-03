@@ -110,6 +110,8 @@ code {
 section table {
   background: #000;
   color: #fff;
+  width: auto;
+  display: inline-table;
 }
 section table th,
 section table td {

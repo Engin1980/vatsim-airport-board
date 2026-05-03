@@ -31,15 +31,21 @@ function padTickerText(v: any, width: number) {
 
 function formatDelayForCell(delayText: string): string {
   if (!delayText) return "";
+  const normalize = (hhmm: string, withPlus = false) => {
+    const parts = hhmm.split(":");
+    const h = parts[0].padStart(2, "0");
+    const m = parts[1].padStart(2, "0");
+    return (withPlus ? "+" : "") + `${h}:${m}`;
+  };
   // match patterns like "Delayed (+01:20)"
   const delayedMatch = /\(\+(\d{1,2}:\d{2})\)/.exec(delayText);
-  if (delayedMatch) return `+${delayedMatch[1]}`;
+  if (delayedMatch) return normalize(delayedMatch[1], true);
   // match explicit +HH:MM anywhere
   const plusMatch = /(\+\d{1,2}:\d{2})/.exec(delayText);
-  if (plusMatch) return plusMatch[1];
+  if (plusMatch) return normalize(plusMatch[1].replace("+", ""), true);
   // match Exp HH:MM -> return HH:MM (no plus)
   const expMatch = /^Exp\s+(\d{1,2}:\d{2})/.exec(delayText);
-  if (expMatch) return expMatch[1];
+  if (expMatch) return normalize(expMatch[1], false);
   return "";
 }
 
@@ -206,8 +212,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           const rounded = Math.round(diffMin / 10) * 10;
           const hh = Math.floor(rounded / 60);
           const mm = rounded % 60;
-          const hhmm = `${hh}:${mm.toString().padStart(2, "0")}`;
-          delayText = `Delayed (+${hhmm})`;
+          const hhStr = hh.toString().padStart(2, "0");
+          const mmStr = mm.toString().padStart(2, "0");
+          delayText = `Delayed (+${hhStr}:${mmStr})`;
         } else {
           // no meaningful delay
           delayText = "";
@@ -352,7 +359,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           const rounded = Math.ceil(diffMin / 10) * 10; // round up to next 10 minutes
           const hh = Math.floor(rounded / 60);
           const mm = rounded % 60;
-          delayText = `Delayed (+${hh}:${mm.toString().padStart(2, "0")})`;
+          const hhStr = hh.toString().padStart(2, "0");
+          const mmStr = mm.toString().padStart(2, "0");
+          delayText = `Delayed (+${hhStr}:${mmStr})`;
         }
       } else if (state === "Gate Open" && time) {
         const now = new Date();
@@ -361,7 +370,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           const rounded = Math.ceil(diffMin / 10) * 10; // round up to next 10 minutes
           const hh = Math.floor(rounded / 60);
           const mm = rounded % 60;
-          delayText = `Delayed (+${hh}:${mm.toString().padStart(2, "0")})`;
+          const hhStr = hh.toString().padStart(2, "0");
+          const mmStr = mm.toString().padStart(2, "0");
+          delayText = `Delayed (+${hhStr}:${mmStr})`;
         }
       }
       return { p, time, state, speed, dist, delayText };
@@ -383,7 +394,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     <div style={{ padding: "0.01rem" }}>
       <section style={{ marginTop: "1rem" }}>
         <h3>Arrivals</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ borderCollapse: "collapse", width: "auto", display: "inline-table" }}>
           <thead>
             <tr>
               <th>LocalTime</th>
@@ -436,7 +447,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
       <section style={{ marginTop: "1.5rem" }}>
         <h3>Departures</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ borderCollapse: "collapse", width: "auto", display: "inline-table" }}>
           <thead>
             <tr>
               <th>LocalTime</th>
