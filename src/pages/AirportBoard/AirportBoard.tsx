@@ -146,7 +146,15 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
         Number(airport.longitude_deg),
       );
     }
-    if (dist === null || speed === null) return "Unknown";
+    // If we don't have a distance, we can't infer anything
+    if (dist === null) return "Unknown";
+    // If speed is missing, infer state from distance only
+    if (speed === null) {
+      if (dist > DIST_ENROUTE_NM) return "Enroute";
+      if (dist > DIST_ARRIVING_NM) return "Arriving";
+      // close to airport but no speed -> treat as Arriving
+      return "Arriving";
+    }
     if (dist > DIST_ENROUTE_NM) return "Enroute";
     if (dist > DIST_ARRIVING_NM) return "Arriving";
     // dist <= 10
@@ -394,7 +402,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const originAirport = originIcao
                   ? getAirportCoords(originIcao)
                   : null;
-                let originName = originAirport?.name ?? null;
+                // Prefer explicit airport name; fall back to municipality/city if available
+                let originName = originAirport?.name ?? originAirport?.municipality ?? originAirport?.city ?? null;
                 if (originName && originName.endsWith(" Airport"))
                   originName = originName.slice(0, -" Airport".length);
                 const originLabel = originName ?? originIcao ?? "—";
@@ -446,7 +455,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const destAirport = destIcao
                   ? getAirportCoords(destIcao)
                   : null;
-                let destName = destAirport?.name ?? null;
+                let destName = destAirport?.name ?? destAirport?.municipality ?? destAirport?.city ?? null;
                 if (destName && destName.endsWith(" Airport"))
                   destName = destName.slice(0, -" Airport".length);
                 const destLabel = destName ?? "—";
