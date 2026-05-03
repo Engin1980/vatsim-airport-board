@@ -380,7 +380,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   );
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div style={{ padding: "0.01rem" }}>
       <section style={{ marginTop: "1rem" }}>
         <h3>Arrivals</h3>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -488,7 +488,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       <div
         style={{
           marginTop: "1.5rem",
-          paddingTop: "1rem",
+          paddingTop: "0.5rem",
           borderTop: "1px solid #eee",
           display: "flex",
           gap: "1rem",
