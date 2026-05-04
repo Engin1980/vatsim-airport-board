@@ -49,6 +49,21 @@ function formatDelayForCell(delayText: string): string {
   return "";
 }
 
+function roundToNearest5(date: Date): Date {
+  const d = new Date(date);
+  const mins = d.getMinutes();
+  const rounded = Math.round(mins / 5) * 5;
+  if (rounded === 60) {
+    d.setMinutes(0);
+    d.setHours(d.getHours() + 1);
+  } else {
+    d.setMinutes(rounded);
+  }
+  d.setSeconds(0);
+  d.setMilliseconds(0);
+  return d;
+}
+
 export interface AirportBoardProps {
   icao: string;
 }
@@ -61,7 +76,28 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [rowsCount, setRowsCount] = useState<number>(10);
 
   useEffect(() => {
+    // Load airports first on mount and capture errors
     let mounted = true;
+    loadAirports()
+      .then((m) => {
+        if (mounted) setAirportsMap(m);
+      })
+      .catch((e) => {
+        console.warn("Failed to load airports map", e);
+        if (mounted) setError(String(e));
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Only load VATSIM data once airportsMap is available to avoid ICAO fallbacks
+    if (!airportsMap) return;
+    let mounted = true;
+    // reset data while reloading
+    setData(null);
+    setError(null);
     loadVatsimData()
       .then((d) => {
         if (mounted) setData(d);
@@ -72,19 +108,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     return () => {
       mounted = false;
     };
-  }, [icao]);
-
-  useEffect(() => {
-    let mounted = true;
-    loadAirports()
-      .then((m) => {
-        if (mounted) setAirportsMap(m);
-      })
-      .catch((e) => console.warn("Failed to load airports map", e));
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  }, [icao, airportsMap]);
 
   // Debug: log flight_plan for SHT 8V if present
   useEffect(() => {
@@ -99,8 +123,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     }
   }, [data]);
 
-  if (error) return <div>Error loading VATSIM data: {error}</div>;
-  if (!data) return <div>Loading flights...</div>;
+  if (error) return <div>Error loading data: {error}</div>;
+  if (!airportsMap) return <div>Loading airports...</div>;
+  if (!data) return <div>Loading flights...</div>
 
   const pilots: VatsimPilot[] = extractActiveFlightsPilots(data);
 
@@ -418,7 +443,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 if (originName && originName.endsWith(" Airport"))
                   originName = originName.slice(0, -" Airport".length);
                 const originLabel = originName ?? originIcao ?? "—";
-                const local = time ? formatTime(time) : "—";
+                const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
                 return (
                   <tr key={`${p.callsign}-arr-${idx}`}>
@@ -470,7 +495,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 if (destName && destName.endsWith(" Airport"))
                   destName = destName.slice(0, -" Airport".length);
                 const destLabel = destName ?? "—";
-                const local = time ? formatTime(time) : "—";
+                const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
                 return (
                   <tr key={`${p.callsign}-dep-${idx}`}>
