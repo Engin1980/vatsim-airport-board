@@ -18,7 +18,7 @@ const TICKER_WIDTHS = {
   localTime: 5,
   callsign: 8,
   name: 30,
-  state: 10,
+  state: 11,
   delay: 6,
 };
 
@@ -486,7 +486,6 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   return (
     <div style={{ padding: "0.01rem" }}>
       <section style={{ marginTop: "1rem" }}>
-        <TickerCell text={"Dudla"} />
         <h3>Arrivals</h3>
         <table
           style={{
