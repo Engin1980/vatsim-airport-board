@@ -95,7 +95,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     // Only load VATSIM data once airportsMap is available to avoid ICAO fallbacks
     if (!airportsMap) return;
     let mounted = true;
-    // reset data while reloading
+    // reset data while reloading initial set
     setData(null);
     setError(null);
     loadVatsimData()
@@ -109,6 +109,73 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       mounted = false;
     };
   }, [icao, airportsMap]);
+
+  // Poll VATSIM feed every 30s in background and update state only when data changed
+  useEffect(() => {
+    if (!airportsMap) return; // wait for airports
+    let mounted = true;
+
+    const fetchAndMaybeUpdate = async () => {
+      try {
+        const newData = await loadVatsimData();
+        if (!mounted) return;
+        setData((prev) => {
+          // If there was no previous data, just set the fetched one
+          if (!prev) return newData;
+
+          try {
+            // Reuse unchanged pilot objects by callsign (preserves refs so React + TickerCell don't remount)
+            const prevPilots = Array.isArray(prev.pilots) ? prev.pilots : [];
+            const prevMap = new Map<string, any>();
+            prevPilots.forEach((pp: any) => {
+              const key = (pp.callsign ?? pp.cid ?? '').toString();
+              if (key) prevMap.set(key, pp);
+            });
+
+            const mergedPilots = Array.isArray(newData.pilots)
+              ? newData.pilots.map((np: any) => {
+                  const key = (np.callsign ?? np.cid ?? '').toString();
+                  const existing = key ? prevMap.get(key) : null;
+                  if (existing) {
+                    try {
+                      if (JSON.stringify(existing) === JSON.stringify(np)) return existing;
+                    } catch (e) {
+                      // ignore stringify errors and fall through to use new object
+                    }
+                  }
+                  return np;
+                })
+              : [];
+
+            const merged = { ...newData, pilots: mergedPilots };
+
+            try {
+              if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+            } catch (e) {
+              // fallthrough
+            }
+
+            return merged;
+          } catch (e) {
+            // fallback: set new data
+            return newData;
+          }
+        });
+      } catch (e) {
+        // don't disrupt UI on poll errors
+        // eslint-disable-next-line no-console
+        console.warn('VATSIM poll failed', e);
+      }
+    };
+
+    // start immediate check and then interval
+    fetchAndMaybeUpdate();
+    const id = setInterval(fetchAndMaybeUpdate, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, [airportsMap]);
 
   // Debug: log flight_plan for SHT 8V if present
   useEffect(() => {
@@ -446,7 +513,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
                 return (
-                  <tr key={`${p.callsign}-arr-${idx}`}>
+                  <tr key={`${p.callsign}-arr`}>
                     <td><TickerCell text={padTickerText(local, TICKER_WIDTHS.localTime)} /></td>
                     <td><TickerCell text={padTickerText(cs, TICKER_WIDTHS.callsign)} /></td>
                     <td><TickerCell text={padTickerText(originLabel, TICKER_WIDTHS.name)} /></td>
@@ -498,7 +565,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
                 return (
-                  <tr key={`${p.callsign}-dep-${idx}`}>
+                  <tr key={`${p.callsign}-dep`}>
                     <td><TickerCell text={padTickerText(local, TICKER_WIDTHS.localTime)} /></td>
                     <td><TickerCell text={padTickerText(cs, TICKER_WIDTHS.callsign)} /></td>
                     <td><TickerCell text={padTickerText(destLabel, TICKER_WIDTHS.name)} /></td>
