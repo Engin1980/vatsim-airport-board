@@ -1,0 +1,289 @@
+import type { VatsimPilot, VatsimFlightPlan } from './vatsim'
+import type { Airport } from './airport'
+import { parseDepTime, computeArrival, formatTime } from '../utils/flightTime'
+import { splitCallsign } from '../utils/callsign'
+
+export type BoardArrival = {
+  p: VatsimPilot
+  time: Date | null
+  state: string
+  speed: number | null
+  dist: number | null
+  expected: Date | null
+  delayText: string
+  originLabel: string
+  local: string
+  callsignSplit: string
+}
+
+export type BoardDeparture = {
+  p: any
+  time: Date | null
+  state: string
+  speed: number | null
+  dist: number | null
+  expected: Date | null
+  delayText: string
+  destLabel: string
+  local: string
+  callsignSplit: string
+}
+
+const DIST_ENROUTE_NM = 40
+const DIST_ARRIVING_NM = 10
+const SPEED_THRESHOLD = 40
+const DIST_THRESHOLD_NM = 5
+const NOT_MOVING_THRESHOLD = 0.5
+
+function deg2rad(d: number) {
+  return (d * Math.PI) / 180
+}
+
+function distanceNm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const Rkm = 6371
+  const dLat = deg2rad(lat2 - lat1)
+  const dLon = deg2rad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const km = Rkm * c
+  return km / 1.852
+}
+
+export function roundToNearest5(date: Date): Date {
+  const d = new Date(date)
+  const mins = d.getMinutes()
+  const rounded = Math.round(mins / 5) * 5
+  if (rounded === 60) {
+    d.setMinutes(0)
+    d.setHours(d.getHours() + 1)
+  } else {
+    d.setMinutes(rounded)
+  }
+  d.setSeconds(0)
+  d.setMilliseconds(0)
+  return d
+}
+
+function getPilotPos(p: any) {
+  const lat = p.latitude ?? p.latitude_deg ?? p.lat
+  const lon = p.longitude ?? p.longitude_deg ?? p.lon
+  if (lat === undefined || lon === undefined || lat === null || lon === null)
+    return null
+  const nLat = Number(lat)
+  const nLon = Number(lon)
+  if (Number.isFinite(nLat) && Number.isFinite(nLon)) return { lat: nLat, lon: nLon }
+  return null
+}
+
+// delay formatting helper removed (unused)
+
+export function buildBoardData(opts: {
+  pilots: VatsimPilot[]
+  profiles?: VatsimFlightPlan[]
+  airportsMap: Map<string, Airport> | null
+  icao: string
+  rowsCount: number
+  showAllDepartures?: boolean
+}) {
+  const { pilots, profiles = [], airportsMap, icao, rowsCount, showAllDepartures = false } = opts
+  const ICAO = icao.toUpperCase()
+
+  const arrivals = pilots.filter(
+    (p) => (p.flight_plan?.arrival ?? '').toUpperCase() === ICAO,
+  )
+  const departures = pilots.filter(
+    (p) => (p.flight_plan?.departure ?? '').toUpperCase() === ICAO,
+  )
+
+  const prefilePilots = (profiles ?? [])
+    .filter((fp) => ((fp.departure ?? '') as string).toUpperCase() === ICAO)
+    .map((fp) => ({ callsign: fp.callsign ?? '', flight_plan: fp, __is_prefile: true }))
+
+  const departuresSource: any[] = [...departures, ...prefilePilots]
+
+  const airport = airportsMap ? airportsMap.get(ICAO) || null : null
+
+  const arrivalsWithTime: BoardArrival[] = arrivals
+    .map((p) => {
+      const time = computeArrival(p.flight_plan)
+      const pos = getPilotPos(p)
+      let dist: number | null = null
+      if (
+        pos &&
+        airport &&
+        airport.latitude_deg !== null &&
+        airport.longitude_deg !== null
+      ) {
+        dist = distanceNm(pos.lat, pos.lon, Number(airport.latitude_deg), Number(airport.longitude_deg))
+      }
+      const speedRaw = (p as any).groundspeed ?? (p as any).ground_speed ?? (p as any).gs
+      const speed: number | null = speedRaw === undefined || speedRaw === null ? null : Number(speedRaw)
+      let state = 'Unknown'
+      if (dist === null) state = 'Unknown'
+      else if (speed === null) {
+        if (dist > DIST_ENROUTE_NM) state = 'Enroute'
+        else if (dist > DIST_ARRIVING_NM) state = 'Arriving'
+        else state = 'Arriving'
+      } else {
+        if (dist > DIST_ENROUTE_NM) state = 'Enroute'
+        else if (dist > DIST_ARRIVING_NM) state = 'Arriving'
+        else if (speed > 40) state = 'Landing'
+        else if (speed > 0 && speed <= 40) state = 'Landed'
+        else if (speed === 0) state = 'At the gate'
+        else state = 'Unknown'
+      }
+
+      let expected: Date | null = null
+      if (dist !== null && speed !== null && speed > 0) {
+        const minutesToGo = (dist / speed) * 60
+        expected = new Date(Date.now() + Math.round((minutesToGo + 10) * 60000))
+      }
+
+      let delayText = ''
+      if (expected && time) {
+        const diffMin = Math.round((expected.getTime() - time.getTime()) / 60000)
+        if (diffMin > 10) {
+          const rounded = Math.round(diffMin / 10) * 10
+          const hh = Math.floor(rounded / 60)
+          const mm = rounded % 60
+          const hhStr = hh.toString().padStart(2, '0')
+          const mmStr = mm.toString().padStart(2, '0')
+          delayText = `+${hhStr}:${mmStr}`
+        } else {
+          delayText = ''
+        }
+      } else if (expected) {
+        delayText = `Exp ${formatTime(expected)}`
+      } else {
+        delayText = ''
+      }
+
+      const originIcao = p.flight_plan?.departure ?? null
+      const originAirport = originIcao && airportsMap ? airportsMap.get(originIcao) : null
+      let originName = originAirport?.name ?? originAirport?.municipality ?? null
+      if (originName && originName.endsWith(' Airport')) originName = originName.slice(0, -' Airport'.length)
+      const originLabel = originName ?? originIcao ?? '—'
+
+      const local = time ? formatTime(roundToNearest5(time)) : '—'
+      const cs = splitCallsign(p.callsign)
+
+      return { p, time, state, speed, dist, expected, delayText, originLabel, local, callsignSplit: cs }
+    })
+    .sort((a, b) => {
+      if (a.time === null && b.time === null) return a.p.callsign.localeCompare(b.p.callsign)
+      if (a.time === null) return 1
+      if (b.time === null) return -1
+      return a.time.getTime() - b.time.getTime()
+    })
+
+  const displayedArrivals = arrivalsWithTime.slice(0, rowsCount)
+
+  const departuresWithTime: BoardDeparture[] = departuresSource
+    .map((p) => {
+      const time = parseDepTime(p.flight_plan)
+      const pos = getPilotPos(p)
+      const speedRaw = (p as any).groundspeed ?? (p as any).ground_speed ?? (p as any).gs
+      const speed: number | null = speedRaw === undefined || speedRaw === null ? null : Number(speedRaw)
+      const isPrefile = Boolean((p as any).__is_prefile)
+
+      let dist: number | null = null
+      if (isPrefile) dist = 0
+      else if (
+        pos &&
+        airport &&
+        airport.latitude_deg !== null &&
+        airport.longitude_deg !== null
+      ) {
+        dist = distanceNm(pos.lat, pos.lon, Number(airport.latitude_deg), Number(airport.longitude_deg))
+      }
+
+      let state = ''
+      if (isPrefile) state = ''
+      else {
+        const sp = Number(p.groundspeed ?? p.ground_speed ?? p.gs ?? 0) || 0
+        if (sp > SPEED_THRESHOLD) state = 'Departed'
+        else if (dist !== null && dist <= DIST_THRESHOLD_NM) {
+          if (sp <= NOT_MOVING_THRESHOLD) state = 'Gate Open'
+          else if (sp <= SPEED_THRESHOLD) state = 'Gate Closed'
+        } else if (dist !== null && dist > DIST_THRESHOLD_NM) {
+          if (sp < SPEED_THRESHOLD) state = 'Arrived Dest'
+          else state = 'Departed'
+        } else if (sp <= NOT_MOVING_THRESHOLD) state = 'Gate Open'
+        else if (sp <= SPEED_THRESHOLD) state = 'Gate Closed'
+        else state = 'Departed'
+      }
+
+      let delayText = ''
+      if (isPrefile && time) {
+        const now = new Date()
+        if (now.getTime() > time.getTime()) {
+          const diffMin = Math.ceil((now.getTime() - time.getTime()) / 60000)
+          const rounded = Math.ceil(diffMin / 10) * 10
+          const hh = Math.floor(rounded / 60)
+          const mm = rounded % 60
+          const hhStr = hh.toString().padStart(2, '0')
+          const mmStr = mm.toString().padStart(2, '0')
+          delayText = `Delayed (+${hhStr}:${mmStr})`
+        }
+      } else if (state === 'Gate Open' && time) {
+        const now = new Date()
+        if (now.getTime() > time.getTime()) {
+          const diffMin = Math.ceil((now.getTime() - time.getTime()) / 60000)
+          const rounded = Math.ceil(diffMin / 10) * 10
+          const hh = Math.floor(rounded / 60)
+          const mm = rounded % 60
+          const hhStr = hh.toString().padStart(2, '0')
+          const mmStr = mm.toString().padStart(2, '0')
+          delayText = `Delayed (+${hhStr}:${mmStr})`
+        }
+      }
+
+      let expected: Date | null = null
+      try {
+        const destIcao = p.flight_plan?.arrival ?? null
+        const destAirport = destIcao && airportsMap ? airportsMap.get(destIcao) : null
+        if (
+          pos &&
+          destAirport &&
+          destAirport.latitude_deg !== null &&
+          destAirport.longitude_deg !== null &&
+          speed !== null &&
+          speed > 0
+        ) {
+          const distToDest = distanceNm(pos.lat, pos.lon, Number(destAirport.latitude_deg), Number(destAirport.longitude_deg))
+          if (distToDest !== null && !isNaN(Number(distToDest))) {
+            const minutesToGo = (distToDest / speed) * 60
+            expected = new Date(Date.now() + Math.round(minutesToGo * 60000))
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      const destIcao = p.flight_plan?.arrival ?? null
+      const destAirport = destIcao && airportsMap ? airportsMap.get(destIcao) : null
+      let destName = destAirport?.name ?? destAirport?.municipality ?? null
+      if (destName && destName.endsWith(' Airport')) destName = destName.slice(0, -' Airport'.length)
+      const destLabel = destName ?? '—'
+
+      const local = time ? formatTime(roundToNearest5(time)) : '—'
+      const cs = splitCallsign(p.callsign)
+
+      return { p, time, state, speed, dist, delayText, expected, destLabel, local, callsignSplit: cs }
+    })
+    .sort((a, b) => {
+      if (a.time === null && b.time === null) return a.p.callsign.localeCompare(b.p.callsign)
+      if (a.time === null) return 1
+      if (b.time === null) return -1
+      return a.time.getTime() - b.time.getTime()
+    })
+
+  const displayedDepartures = departuresWithTime.filter((d) => showAllDepartures || (d.dist !== null && d.dist <= 50))
+
+  return { arrivals: displayedArrivals, departures: displayedDepartures }
+}

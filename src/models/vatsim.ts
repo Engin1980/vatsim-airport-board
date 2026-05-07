@@ -1,5 +1,6 @@
 export interface VatsimGeneral {
   update?: string | number | null
+  timestamp?: string | number | null
 }
 
 export interface VatsimFlightPlan {
@@ -26,6 +27,8 @@ export interface VatsimPilot {
 
 export interface VatsimData {
   general?: VatsimGeneral | null
+  // some feeds may expose a top-level `update` timestamp
+  update?: string | number | null
   pilots: VatsimPilot[]
   profiles: VatsimFlightPlan[]
 }
