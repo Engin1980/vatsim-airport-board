@@ -1,6 +1,6 @@
+import { useState } from "react";
 import useAirportBoard from "../../hooks/useAirportBoard";
 import BoardBlock from "./BoardBlock";
-import { formatTime } from "../../utils/flightTime";
 import { roundToNearest5 } from "../../models/airportBoardModel";
 
 // Fixed ticker widths (characters) — easy to change
@@ -23,6 +23,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     loadingAirports,
     loadingData,
     error,
+    airportsMap,
     rowsCount,
     setRowsCount,
     showAllDepartures,
@@ -30,6 +31,22 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     lastFetchAttempt,
     lastDataTimestamp,
   } = useAirportBoard(icao);
+
+  const [timeMode, setTimeMode] = useState<'Airport' | 'User' | 'Zulu'>('Airport')
+
+  const airportTz = airportsMap?.get(icao.toUpperCase())?.timezone ?? undefined
+
+  function formatByMode(d: Date | null): string {
+    if (!d) return '—'
+    const rd = roundToNearest5(d)
+    try {
+      if (timeMode === 'Zulu') return rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+      if (timeMode === 'Airport' && airportTz) return rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: airportTz })
+      return rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } catch (e) {
+      return '—'
+    }
+  }
 
   function formatTimestamp(v: any): string {
     if (!v) return "—";
@@ -70,23 +87,13 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             {Array.from({ length: rowsCount }).map((_, idx) => {
               const item = arrivals[idx];
               if (item) {
-                const {
-                  local,
-                  callsignSplit,
-                  originLabel,
-                  state,
-                  delayText,
-                  expected,
-                } = item;
-                const displayState =
-                  expected && state === "Enroute"
-                    ? `Est ${formatTime(roundToNearest5(expected))}`
-                    : state || "";
+                const { callsignSplit, originLabel, state, delayText, expected, time } = item;
+                const displayState = expected && state === "Enroute" ? `Est ${formatByMode(expected)}` : state || "";
                 return (
                   <tr key={`row-arr-${idx}`}>
                     <td>
                       <BoardBlock
-                        text={local}
+                        text={formatByMode(time)}
                         length={TICKER_WIDTHS.localTime}
                       />
                     </td>
@@ -103,10 +110,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                       />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={displayState}
-                        length={TICKER_WIDTHS.state}
-                      />
+                      <BoardBlock text={displayState} length={TICKER_WIDTHS.state} />
                     </td>
                     <td>
                       <BoardBlock
@@ -163,23 +167,13 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             {Array.from({ length: rowsCount }).map((_, idx) => {
               const item = departures[idx];
               if (item) {
-                const {
-                  local,
-                  callsignSplit,
-                  destLabel,
-                  state,
-                  delayText,
-                  expected,
-                } = item;
-                const displayState =
-                  expected && (state === "Enroute" || state === "Departed")
-                    ? `Departed`
-                    : state || "";
+                const { callsignSplit, destLabel, state, delayText, expected, time } = item;
+                const displayState = expected && (state === "Enroute" || state === "Departed") ? `Departed` : state || "";
                 return (
                   <tr key={`row-dep-${idx}`}>
                     <td>
                       <BoardBlock
-                        text={local}
+                        text={formatByMode(time)}
                         length={TICKER_WIDTHS.localTime}
                       />
                     </td>
@@ -258,6 +252,20 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             onChange={(e) => setShowAllDepartures(e.target.checked)}
           />
           <span>Zobrazit všechny odlety (včetně vzdálenějších než 50 NM)</span>
+        </label>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <span>Čas:</span>
+          <select value={timeMode} onChange={(e) => setTimeMode(e.target.value as any)} style={{ width: '8rem' }}>
+            <option value="Airport">Airport</option>
+            <option value="User">User</option>
+            <option value="Zulu">Zulu</option>
+          </select>
         </label>
         <label
           style={{

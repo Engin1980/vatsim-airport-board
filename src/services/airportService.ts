@@ -58,6 +58,15 @@ export async function loadAirports(): Promise<Map<string, Airport>> {
   // Normalize common dash characters (en-dash, em-dash) to simple hyphen
   text = text.replace(/[–—]/g, '-')
   const rows = parseCSV(text)
+  // Try to dynamically import tz-lookup to determine airport timezones.
+  let tzlookup: ((lat: number, lon: number) => string) | null = null
+  try {
+    const mod = await import('tz-lookup')
+    tzlookup = (mod as any).default ?? (mod as any)
+  } catch (e) {
+    // tz-lookup not available; timezone will remain null
+    tzlookup = null
+  }
   const map = new Map<string, Airport>()
   for (const r of rows) {
     const icao = (r['icao_code'] ?? '').trim()
@@ -82,6 +91,20 @@ export async function loadAirports(): Promise<Map<string, Airport>> {
       home_link: (r['home_link'] ?? '') || null,
       wikipedia_link: (r['wikipedia_link'] ?? '') || null,
       keywords: (r['keywords'] ?? '') || null,
+    }
+    // Attempt to determine timezone if tz-lookup was imported and coords exist
+    try {
+      if (
+        tzlookup &&
+        airport.latitude_deg != null &&
+        airport.longitude_deg != null
+      ) {
+        airport.timezone = tzlookup(airport.latitude_deg, airport.longitude_deg)
+      } else {
+        airport.timezone = null
+      }
+    } catch (e) {
+      airport.timezone = null
     }
     map.set(icao, airport)
   }

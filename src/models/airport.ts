@@ -18,4 +18,5 @@ export interface Airport {
   home_link: string | null
   wikipedia_link: string | null
   keywords: string | null
+  timezone?: string | null
 }

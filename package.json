@@ -12,7 +12,8 @@
   "dependencies": {
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-ticker-board": "^1.0.4"
+    "react-ticker-board": "^1.0.4",
+    "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
