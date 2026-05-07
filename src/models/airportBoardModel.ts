@@ -132,12 +132,22 @@ export function buildBoardData(opts: {
         else if (dist > DIST_ARRIVING_NM) state = 'Arriving'
         else state = 'Arriving'
       } else {
-        if (dist > DIST_ENROUTE_NM) state = 'Enroute'
-        else if (dist > DIST_ARRIVING_NM) state = 'Arriving'
-        else if (speed > 40) state = 'Landing'
-        else if (speed > 0 && speed <= 40) state = 'Landed'
-        else if (speed === 0) state = 'At the gate'
-        else state = 'Unknown'
+        // If the aircraft is farther than the 'arriving' threshold, and it
+        // hasn't taken off (speed <= 40 kt), show 'Scheduled'. If it's
+        // within the arriving threshold, use the close-in states (Landing,
+        // Landed, At the gate) based on speed.
+        if (dist > DIST_ENROUTE_NM) {
+          state = 'Enroute'
+        } else if (dist > DIST_ARRIVING_NM) {
+          // Mid-range: if still very slow, likely hasn't departed yet
+          state = speed <= 40 ? 'Scheduled' : 'Arriving'
+        } else {
+          // Close to airport: use landing/landed/gate heuristics
+          if (speed > 40) state = 'Landing'
+          else if (speed > 0 && speed <= 40) state = 'Landed'
+          else if (speed === 0) state = 'At the gate'
+          else state = 'Unknown'
+        }
       }
 
       let expected: Date | null = null

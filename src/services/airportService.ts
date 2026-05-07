@@ -54,7 +54,9 @@ export async function loadAirports(): Promise<Map<string, Airport>> {
   const url = '/data/airports.csv'
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`)
-  const text = await res.text()
+  let text = await res.text()
+  // Normalize common dash characters (en-dash, em-dash) to simple hyphen
+  text = text.replace(/[–—]/g, '-')
   const rows = parseCSV(text)
   const map = new Map<string, Airport>()
   for (const r of rows) {
