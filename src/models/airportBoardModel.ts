@@ -141,9 +141,34 @@ export function buildBoardData(opts: {
       }
 
       let expected: Date | null = null
-      if (dist !== null && speed !== null && speed > 0) {
-        const minutesToGo = (dist / speed) * 60
-        expected = new Date(Date.now() + Math.round((minutesToGo + 10) * 60000))
+      // Only compute ETA if we have position, speed and the aircraft is
+      // reasonably high (>= 10000 ft). Accept common altitude fields and
+      // convert meters->feet when necessary.
+      try {
+        const altMRaw = (p as any).altitude_m ?? (p as any).alt_m ?? null
+        const altFtRaw = (p as any).altitude_ft ?? (p as any).alt_ft ?? (p as any).altitude ?? (p as any).alt ?? null
+        let altitudeFt: number | null = null
+        if (altMRaw != null) {
+          const n = Number(altMRaw)
+          if (!isNaN(n)) altitudeFt = n * 3.28084
+        } else if (altFtRaw != null) {
+          const n = Number(altFtRaw)
+          if (!isNaN(n)) altitudeFt = n
+        }
+
+        if (
+          dist !== null &&
+          speed !== null &&
+          speed > 0 &&
+          altitudeFt !== null &&
+          !isNaN(altitudeFt) &&
+          altitudeFt >= 10000
+        ) {
+          const minutesToGo = (dist / speed) * 60
+          expected = new Date(Date.now() + Math.round((minutesToGo + 10) * 60000))
+        }
+      } catch (e) {
+        // ignore altitude parsing errors and leave expected as null
       }
 
       let delayText = ''

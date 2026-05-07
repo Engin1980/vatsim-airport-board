@@ -67,7 +67,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const { local, callsignSplit, originLabel, state, delayText, expected } = item
                 const displayState = expected && state === 'Enroute' ? `Est ${formatTime(roundToNearest5(expected))}` : state || ''
                 return (
-                  <tr key={`${item.p.callsign}-arr`}>
+                  <tr key={`row-arr-${idx}`}>
                     <td>
                       <BoardBlock text={local} length={TICKER_WIDTHS.localTime} />
                     </td>
@@ -87,7 +87,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 )
               }
               return (
-                <tr key={`empty-arr-${idx}`}>
+                <tr key={`row-arr-${idx}`}>
                   <td>
                     <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
                   </td>
@@ -129,7 +129,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const { local, callsignSplit, destLabel, state, delayText, expected } = item
                 const displayState = expected && (state === 'Enroute' || state === 'Departed') ? `Departed` : state || ''
                 return (
-                  <tr key={`${item.p.callsign}-dep`}>
+                  <tr key={`row-dep-${idx}`}>
                     <td>
                       <BoardBlock text={local} length={TICKER_WIDTHS.localTime} />
                     </td>
@@ -149,7 +149,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 )
               }
               return (
-                <tr key={`empty-dep-${idx}`}>
+                <tr key={`row-dep-${idx}`}>
                   <td>
                     <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
                   </td>
