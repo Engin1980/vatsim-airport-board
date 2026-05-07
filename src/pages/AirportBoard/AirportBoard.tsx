@@ -149,7 +149,11 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       <section style={{ marginTop: "1rem" }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>Arrivals</h3>
-          <div style={{ color: '#666', fontSize: '0.9rem' }}>Stránka {arrPage + 1}/{arrTotalPages}</div>
+          <div style={{ color: '#88F', fontSize: '0.9rem' }} aria-hidden>
+            {Array.from({ length: arrTotalPages }).map((_, i) => (
+              <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>{i === arrPage ? '⏺' : '○'}</span>
+            ))}
+          </div>
         </div>
         <table
           style={{
@@ -233,7 +237,11 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       <section style={{ marginTop: "1.5rem" }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>Departures</h3>
-          <div style={{ color: '#666', fontSize: '0.9rem' }}>Stránka {depPage + 1}/{depTotalPages}</div>
+          <div style={{ color: '#88F', fontSize: '0.9rem' }} aria-hidden>
+            {Array.from({ length: depTotalPages }).map((_, i) => (
+              <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>{i === depPage ? '⏺' : '○'}</span>
+            ))}
+          </div>
         </div>
         <table
           style={{
