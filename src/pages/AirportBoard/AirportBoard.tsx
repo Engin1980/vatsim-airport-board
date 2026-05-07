@@ -340,7 +340,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           const mm = rounded % 60;
           const hhStr = hh.toString().padStart(2, "0");
           const mmStr = mm.toString().padStart(2, "0");
-          delayText = `Delayed (+${hhStr}:${mmStr})`;
+          delayText = `+${hhStr}:${mmStr}`;
         } else {
           // no meaningful delay
           delayText = "";
@@ -400,13 +400,6 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   function getAirportCoords(icao: string) {
     if (!airportsMap) return null;
     return airportsMap.get(icao.toUpperCase()) || null;
-  }
-
-  // Render cell with non-breaking space for empty/null/placeholder values
-  function renderCell(v: any) {
-    if (v === undefined || v === null) return "\u00A0";
-    if (typeof v === "string" && (v === "" || v === "—")) return "\u00A0";
-    return v;
   }
 
   function computeDepartureState(p: any): string {
@@ -685,9 +678,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
                 // display Est HH:MM for enroute/departed flights when expected arrival exists
-                const displayState =
+                const displayState = 
                   expected && (state === "Enroute" || state === "Departed")
-                    ? `Est ${formatTime(roundToNearest5(expected))}`
+                    ? `Departed`
                     : state || "";
                 return (
                   <tr key={`${p.callsign}-dep`}>
