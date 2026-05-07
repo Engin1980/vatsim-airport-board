@@ -73,7 +73,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [error, setError] = useState<string | null>(null);
   const [airportsMap, setAirportsMap] = useState<Map<string, any> | null>(null);
   const [showAllDepartures, setShowAllDepartures] = useState<boolean>(false);
-  const [rowsCount, setRowsCount] = useState<number>(10);
+  const [rowsCount, setRowsCount] = useState<number>(7);
   const [lastFetchAttempt, setLastFetchAttempt] = useState<Date | null>(null);
   const [lastDataTimestamp, setLastDataTimestamp] = useState<string | null>(
     null,
@@ -593,19 +593,31 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 return (
                   <tr key={`${p.callsign}-arr`}>
                     <td>
-                      <BoardBlock text={local} length={TICKER_WIDTHS.localTime} />
+                      <BoardBlock
+                        text={local}
+                        length={TICKER_WIDTHS.localTime}
+                      />
                     </td>
                     <td>
                       <BoardBlock text={cs} length={TICKER_WIDTHS.callsign} />
                     </td>
                     <td>
-                      <BoardBlock text={originLabel} length={TICKER_WIDTHS.name} />
+                      <BoardBlock
+                        text={originLabel}
+                        length={TICKER_WIDTHS.name}
+                      />
                     </td>
                     <td>
-                      <BoardBlock text={displayState} length={TICKER_WIDTHS.state} />
+                      <BoardBlock
+                        text={displayState}
+                        length={TICKER_WIDTHS.state}
+                      />
                     </td>
                     <td>
-                      <BoardBlock text={delayText} length={TICKER_WIDTHS.delay} />
+                      <BoardBlock
+                        text={delayText}
+                        length={TICKER_WIDTHS.delay}
+                      />
                     </td>
                   </tr>
                 );
@@ -634,7 +646,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </tbody>
         </table>
       </section>
-{/* 
+
       <section style={{ marginTop: "1.5rem" }}>
         <h3>Departures</h3>
         <table
@@ -681,30 +693,29 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                   <tr key={`${p.callsign}-dep`}>
                     <td>
                       <BoardBlock
-                        text={padTickerText(local, TICKER_WIDTHS.localTime)}
+                        text={local}
+                        length={TICKER_WIDTHS.localTime}
+                      />
+                    </td>
+                    <td>
+                      <BoardBlock text={cs} length={TICKER_WIDTHS.callsign} />
+                    </td>
+                    <td>
+                      <BoardBlock
+                        text={destLabel}
+                        length={TICKER_WIDTHS.name}
                       />
                     </td>
                     <td>
                       <BoardBlock
-                        text={padTickerText(cs, TICKER_WIDTHS.callsign)}
+                        text={displayState}
+                        length={TICKER_WIDTHS.state}
                       />
                     </td>
                     <td>
                       <BoardBlock
-                        text={padTickerText(destLabel, TICKER_WIDTHS.name)}
-                      />
-                    </td>
-                    <td>
-                      <BoardBlock
-                        text={padTickerText(displayState, TICKER_WIDTHS.state)}
-                      />
-                    </td>
-                    <td>
-                      <BoardBlock
-                        text={padTickerText(
-                          formatDelayForCell(delayText || ""),
-                          TICKER_WIDTHS.delay,
-                        )}
+                        text={delayText || ""}
+                        length={TICKER_WIDTHS.delay}
                       />
                     </td>
                   </tr>
@@ -713,36 +724,26 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               return (
                 <tr key={`empty-dep-${idx}`}>
                   <td>
-                    <BoardBlock
-                      text={padTickerText(null, TICKER_WIDTHS.localTime)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
                   </td>
                   <td>
-                    <BoardBlock
-                      text={padTickerText(null, TICKER_WIDTHS.callsign)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.callsign} />
                   </td>
                   <td>
-                    <BoardBlock
-                      text={padTickerText(null, TICKER_WIDTHS.name)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.name} />
                   </td>
                   <td>
-                    <BoardBlock
-                      text={padTickerText(null, TICKER_WIDTHS.state)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.state} />
                   </td>
                   <td>
-                    <BoardBlock
-                      text={padTickerText(null, TICKER_WIDTHS.delay)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.delay} />
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-      </section> */}
+      </section>
 
       <div
         style={{

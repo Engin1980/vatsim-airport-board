@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { TickerBoard } from "react-ticker-board";
 
 type BoardBlockProps = {
   text: string;
@@ -6,14 +6,10 @@ type BoardBlockProps = {
 };
 
 const BoardBlock = ({ text,  length }: BoardBlockProps) => {
-  const ref = useRef<HTMLUListElement | null>(null);
-  const boardRef = useRef<any>(null);
-  const lastTextRef = useRef<string | null>(null);
-
   var messages = [text];
 
-  return <div>{text ?? "\u00A0"}</div>;
-  // return <TickerBoard messages={messages} count={1} size={length} theme={"dark"} />;
+  //return <div>{text ?? "\u00A0"}</div>;
+  return <TickerBoard messages={messages} count={1} size={length} theme={"dark"} />;
 };
 
 export default BoardBlock;
