@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useAirportBoard from "../../hooks/useAirportBoard";
 import BoardBlock from "./BoardBlock";
 import { roundToNearest5 } from "../../models/airportBoardModel";
@@ -42,6 +42,67 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     return () => clearInterval(id)
   }, [])
 
+  const [arrPage, setArrPage] = useState(0)
+  const [depPage, setDepPage] = useState(0)
+  const [autoRotatePages, setAutoRotatePages] = useState(true)
+  const [rotateIntervalSec, setRotateIntervalSec] = useState<number>(15)
+
+  const prevRowsCountArrRef = useRef<number>(rowsCount)
+  const prevRowsCountDepRef = useRef<number>(rowsCount)
+
+  useEffect(() => {
+    const prevArr = prevRowsCountArrRef.current
+    const prevDep = prevRowsCountDepRef.current
+
+    // If rowsCount changed for arrivals and we have arrivals data, recompute arrival page
+    if (prevArr !== rowsCount && (arrivals?.length || 0) > 0) {
+      setArrPage((prevPage) => {
+        const globalIndex = prevPage * prevArr
+        const newTotal = Math.max(1, Math.ceil((arrivals?.length || 0) / rowsCount))
+        const newPage = Math.floor(globalIndex / rowsCount)
+        return Math.min(Math.max(0, newPage), newTotal - 1)
+      })
+      prevRowsCountArrRef.current = rowsCount
+    }
+
+    // If rowsCount changed for departures and we have departures data, recompute departure page
+    if (prevDep !== rowsCount && (departures?.length || 0) > 0) {
+      setDepPage((prevPage) => {
+        const globalIndex = prevPage * prevDep
+        const newTotal = Math.max(1, Math.ceil((departures?.length || 0) / rowsCount))
+        const newPage = Math.floor(globalIndex / rowsCount)
+        return Math.min(Math.max(0, newPage), newTotal - 1)
+      })
+      prevRowsCountDepRef.current = rowsCount
+    }
+  }, [rowsCount, arrivals?.length, departures?.length])
+
+  const arrTotalPages = Math.max(1, Math.ceil((arrivals?.length || 0) / rowsCount))
+  const depTotalPages = Math.max(1, Math.ceil((departures?.length || 0) / rowsCount))
+
+  useEffect(() => {
+    if (arrPage >= arrTotalPages) setArrPage(0)
+  }, [arrTotalPages, arrPage])
+
+  useEffect(() => {
+    if (depPage >= depTotalPages) setDepPage(0)
+  }, [depTotalPages, depPage])
+
+  useEffect(() => {
+    // If interval is 0, keep both tables fixed to the first page
+    if (rotateIntervalSec === 0) {
+      setArrPage(0)
+      setDepPage(0)
+      return
+    }
+    if (!autoRotatePages) return
+    const id = setInterval(() => {
+      setArrPage((p) => (arrTotalPages > 1 ? (p + 1) % arrTotalPages : 0))
+      setDepPage((p) => (depTotalPages > 1 ? (p + 1) % depTotalPages : 0))
+    }, rotateIntervalSec * 1000)
+    return () => clearInterval(id)
+  }, [autoRotatePages, rotateIntervalSec, arrTotalPages, depTotalPages])
+
   function formatNowByMode(d: Date): string {
     try {
       if (timeMode === 'Zulu') return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
@@ -84,8 +145,12 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.25rem' }}>
         <BoardBlock text={formatNowByMode(now)} length={TICKER_WIDTHS.localTime} />
       </div>
+
       <section style={{ marginTop: "1rem" }}>
-        <h3>Arrivals</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3>Arrivals</h3>
+          <div style={{ color: '#666', fontSize: '0.9rem' }}>Stránka {arrPage + 1}/{arrTotalPages}</div>
+        </div>
         <table
           style={{
             borderCollapse: "collapse",
@@ -104,7 +169,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </thead>
           <tbody>
             {Array.from({ length: rowsCount }).map((_, idx) => {
-              const item = arrivals[idx];
+              const pageStart = arrPage * rowsCount
+              const item = arrivals[pageStart + idx];
               if (item) {
                 const { callsignSplit, originLabel, state, delayText, expected, time } = item;
                 const displayState = expected && state === "Enroute" ? `Est ${formatByMode(expected)}` : state || "";
@@ -165,7 +231,10 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       </section>
 
       <section style={{ marginTop: "1.5rem" }}>
-        <h3>Departures</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3>Departures</h3>
+          <div style={{ color: '#666', fontSize: '0.9rem' }}>Stránka {depPage + 1}/{depTotalPages}</div>
+        </div>
         <table
           style={{
             borderCollapse: "collapse",
@@ -184,7 +253,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </thead>
           <tbody>
             {Array.from({ length: rowsCount }).map((_, idx) => {
-              const item = departures[idx];
+              const pageStart = depPage * rowsCount
+              const item = departures[pageStart + idx];
               if (item) {
                 const { callsignSplit, destLabel, state, delayText, expected, time } = item;
                 const displayState = expected && (state === "Enroute" || state === "Departed") ? `Departed` : state || "";
@@ -270,7 +340,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             checked={showAllDepartures}
             onChange={(e) => setShowAllDepartures(e.target.checked)}
           />
-          <span>Zobrazit všechny odlety (včetně vzdálenějších než 50 NM)</span>
+          <span>Zobrazit vzdálené odlety</span>
         </label>
         <label
           style={{
@@ -293,14 +363,43 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             gap: "0.5rem",
           }}
         >
+          <input type="checkbox" checked={autoRotatePages} onChange={(e) => setAutoRotatePages(e.target.checked)} />
+          <span>Auto-stránkování</span>
+        </label>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <span>Interval strany (s):</span>
+          <input
+            type="number"
+            min={0}
+            value={rotateIntervalSec}
+            onChange={(e) => {
+              const v = parseInt(e.target.value || "30", 10);
+              setRotateIntervalSec(isNaN(v) ? 30 : Math.max(0, v));
+            }}
+            style={{ width: "4rem" }}
+          />
+        </label>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
           <span>Počet řádků:</span>
           <input
             type="number"
             min={1}
             value={rowsCount}
             onChange={(e) => {
-              const v = parseInt(e.target.value || "10", 10);
-              setRowsCount(isNaN(v) ? 10 : Math.max(1, v));
+              const v = parseInt(e.target.value || "7", 10);
+              setRowsCount(isNaN(v) ? 7 : Math.max(1, v));
             }}
             style={{ width: "4rem" }}
           />

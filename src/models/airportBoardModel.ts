@@ -92,7 +92,7 @@ export function buildBoardData(opts: {
   // optional map of previous departure states keyed by callsign (persist across polls)
   prevDepartureStates?: Map<string, string>
 }) {
-  const { pilots, profiles = [], airportsMap, icao, rowsCount, showAllDepartures = false, prevDepartureStates } = opts
+  const { pilots, profiles = [], airportsMap, icao, showAllDepartures = false, prevDepartureStates } = opts
   const ICAO = icao.toUpperCase()
 
   const arrivals = pilots.filter(
@@ -218,7 +218,7 @@ export function buildBoardData(opts: {
       return a.time.getTime() - b.time.getTime()
     })
 
-  const displayedArrivals = arrivalsWithTime.slice(0, rowsCount)
+  const displayedArrivals = arrivalsWithTime
 
   const departuresWithTime: BoardDeparture[] = departuresSource
     .map((p) => {
