@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import type { VatsimData } from '../models/vatsim'
 import { loadVatsimData, extractActiveFlightsPilots } from '../services/vatsimService'
 import { loadAirports } from '../services/airportService'
@@ -118,8 +118,19 @@ export default function useAirportBoard(icao: string, opts?: { pollIntervalMs?: 
 
   const pilots = useMemo(() => (data ? extractActiveFlightsPilots(data) : []), [data])
 
+  // persistent map to remember departure states across polls (sticky 'Gate Closed')
+  const prevDepartureStatesRef = useRef<Map<string, string>>(new Map())
+
   const board = useMemo(() => {
-    return buildBoardData({ pilots, profiles: data?.profiles ?? [], airportsMap, icao, rowsCount, showAllDepartures })
+    return buildBoardData({
+      pilots,
+      profiles: data?.profiles ?? [],
+      airportsMap,
+      icao,
+      rowsCount,
+      showAllDepartures,
+      prevDepartureStates: prevDepartureStatesRef.current,
+    })
   }, [pilots, data?.profiles, airportsMap, icao, rowsCount, showAllDepartures])
 
   return {

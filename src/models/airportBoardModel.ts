@@ -89,8 +89,10 @@ export function buildBoardData(opts: {
   icao: string
   rowsCount: number
   showAllDepartures?: boolean
+  // optional map of previous departure states keyed by callsign (persist across polls)
+  prevDepartureStates?: Map<string, string>
 }) {
-  const { pilots, profiles = [], airportsMap, icao, rowsCount, showAllDepartures = false } = opts
+  const { pilots, profiles = [], airportsMap, icao, rowsCount, showAllDepartures = false, prevDepartureStates } = opts
   const ICAO = icao.toUpperCase()
 
   const arrivals = pilots.filter(
@@ -218,6 +220,21 @@ export function buildBoardData(opts: {
         else state = 'Departed'
       }
 
+      // If we have a previous state recorded for this callsign, ensure we do not
+      // regress from 'Gate Closed' back to 'Gate Open'. This preserves the
+      // 'Gate Closed' sticky behavior across polls for the same callsign.
+      try {
+        const key = (p.callsign ?? '').toString()
+        if (prevDepartureStates && key) {
+          const prev = prevDepartureStates.get(key)
+          if (prev === 'Gate Closed' && state === 'Gate Open') {
+            state = 'Gate Closed'
+          }
+        }
+      } catch (e) {
+        // ignore any errors reading the previous map
+      }
+
       let delayText = ''
       if (isPrefile && time) {
         const now = new Date()
@@ -273,6 +290,17 @@ export function buildBoardData(opts: {
 
       const local = time ? formatTime(roundToNearest5(time)) : '—'
       const cs = splitCallsign(p.callsign)
+
+      // Persist Gate Closed states into the provided map so subsequent calls
+      // will honor the sticky behavior.
+      try {
+        const key = (p.callsign ?? '').toString()
+        if (prevDepartureStates && key && state === 'Gate Closed') {
+          prevDepartureStates.set(key, 'Gate Closed')
+        }
+      } catch (e) {
+        // ignore
+      }
 
       return { p, time, state, speed, dist, delayText, expected, destLabel, local, callsignSplit: cs }
     })
