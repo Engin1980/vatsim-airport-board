@@ -11,7 +11,7 @@ import {
 } from "../../utils/flightTime";
 import { splitCallsign } from "../../utils/callsign";
 import { loadAirports } from "../../services/airportService";
-import TickerCell from "./TickerCell";
+import BoardBlock from "./BoardBlock";
 
 // Fixed ticker widths (characters) — easy to change
 const TICKER_WIDTHS = {
@@ -74,6 +74,21 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [airportsMap, setAirportsMap] = useState<Map<string, any> | null>(null);
   const [showAllDepartures, setShowAllDepartures] = useState<boolean>(false);
   const [rowsCount, setRowsCount] = useState<number>(10);
+  const [lastFetchAttempt, setLastFetchAttempt] = useState<Date | null>(null);
+  const [lastDataTimestamp, setLastDataTimestamp] = useState<string | null>(
+    null,
+  );
+
+  function formatTimestamp(v: any): string {
+    if (!v) return "—";
+    try {
+      const d = v instanceof Date ? v : new Date(v);
+      if (isNaN(d.getTime())) return String(v);
+      return d.toLocaleString();
+    } catch (e) {
+      return String(v);
+    }
+  }
 
   useEffect(() => {
     // Load airports first on mount and capture errors
@@ -98,9 +113,18 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     // reset data while reloading initial set
     setData(null);
     setError(null);
+    setLastFetchAttempt(new Date());
     loadVatsimData()
       .then((d) => {
-        if (mounted) setData(d);
+        if (mounted) {
+          setData(d);
+          const ts =
+            d?.general?.update ??
+            d?.update ??
+            d?.general?.timestamp ??
+            new Date().toISOString();
+          setLastDataTimestamp(ts ?? null);
+        }
       })
       .catch((e) => {
         if (mounted) setError(String(e));
@@ -117,14 +141,23 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
     const fetchAndMaybeUpdate = async () => {
       try {
+        // mark the attempt time
+        setLastFetchAttempt(new Date());
         const newData = await loadVatsimData();
         if (!mounted) return;
+        // update last known server timestamp even if content is identical
+        const ts2 =
+          newData?.general?.update ??
+          newData?.update ??
+          newData?.general?.timestamp ??
+          new Date().toISOString();
+        setLastDataTimestamp(ts2 ?? null);
         setData((prev) => {
           // If there was no previous data, just set the fetched one
           if (!prev) return newData;
 
           try {
-            // Reuse unchanged pilot objects by callsign (preserves refs so React + TickerCell don't remount)
+            // Reuse unchanged pilot objects by callsign (preserves refs so React + BoardBlock don't remount)
             const prevPilots = Array.isArray(prev.pilots) ? prev.pilots : [];
             const prevMap = new Map<string, any>();
             prevPilots.forEach((pp: any) => {
@@ -468,7 +501,36 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           delayText = `Delayed (+${hhStr}:${mmStr})`;
         }
       }
-      return { p, time, state, speed, dist, delayText };
+
+      // compute estimated arrival to destination (for enroute/departed flights)
+      let expected: Date | null = null;
+      try {
+        const destIcao = p.flight_plan?.arrival ?? null;
+        const destAirport = destIcao ? getAirportCoords(destIcao) : null;
+        if (
+          pos &&
+          destAirport &&
+          destAirport.latitude_deg !== null &&
+          destAirport.longitude_deg !== null &&
+          speed !== null &&
+          speed > 0
+        ) {
+          const distToDest = distanceNm(
+            pos.lat,
+            pos.lon,
+            Number(destAirport.latitude_deg),
+            Number(destAirport.longitude_deg),
+          );
+          if (distToDest !== null && !isNaN(Number(distToDest))) {
+            const minutesToGo = (distToDest / speed) * 60;
+            expected = new Date(Date.now() + Math.round(minutesToGo * 60000));
+          }
+        }
+      } catch (e) {
+        // ignore failures computing expected
+      }
+
+      return { p, time, state, speed, dist, delayText, expected };
     })
     .sort((a, b) => {
       if (a.time === null && b.time === null)
@@ -507,7 +569,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             {Array.from({ length: rowsCount }).map((_, idx) => {
               const item = displayedArrivals[idx];
               if (item) {
-                const { p, time, state, delayText } = item;
+                const { p, time, state, delayText, expected } = item;
                 const originIcao = p.flight_plan?.departure ?? null;
                 const originAirport = originIcao
                   ? getAirportCoords(originIcao)
@@ -523,35 +585,27 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const originLabel = originName ?? originIcao ?? "—";
                 const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
+                // display Est HH:MM for enroute arrivals when expected arrival exists
+                const displayState =
+                  expected && state === "Enroute"
+                    ? `Est ${formatTime(roundToNearest5(expected))}`
+                    : state || "";
                 return (
                   <tr key={`${p.callsign}-arr`}>
                     <td>
-                      <TickerCell
-                        text={padTickerText(local, TICKER_WIDTHS.localTime)}
-                      />
+                      <BoardBlock text={local} length={TICKER_WIDTHS.localTime} />
                     </td>
                     <td>
-                      <TickerCell
-                        text={padTickerText(cs, TICKER_WIDTHS.callsign)}
-                      />
+                      <BoardBlock text={cs} length={TICKER_WIDTHS.callsign} />
                     </td>
                     <td>
-                      <TickerCell
-                        text={padTickerText(originLabel, TICKER_WIDTHS.name)}
-                      />
+                      <BoardBlock text={originLabel} length={TICKER_WIDTHS.name} />
                     </td>
                     <td>
-                      <TickerCell
-                        text={padTickerText(state || "", TICKER_WIDTHS.state)}
-                      />
+                      <BoardBlock text={displayState} length={TICKER_WIDTHS.state} />
                     </td>
                     <td>
-                      <TickerCell
-                        text={padTickerText(
-                          formatDelayForCell(delayText || ""),
-                          TICKER_WIDTHS.delay,
-                        )}
-                      />
+                      <BoardBlock text={delayText} length={TICKER_WIDTHS.delay} />
                     </td>
                   </tr>
                 );
@@ -560,29 +614,19 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               return (
                 <tr key={`empty-arr-${idx}`}>
                   <td>
-                    <TickerCell
-                      text={padTickerText(null, TICKER_WIDTHS.localTime)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
                   </td>
                   <td>
-                    <TickerCell
-                      text={padTickerText(null, TICKER_WIDTHS.callsign)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.callsign} />
                   </td>
                   <td>
-                    <TickerCell
-                      text={padTickerText(null, TICKER_WIDTHS.name)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.name} />
                   </td>
                   <td>
-                    <TickerCell
-                      text={padTickerText(null, TICKER_WIDTHS.state)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.state} />
                   </td>
                   <td>
-                    <TickerCell
-                      text={padTickerText(null, TICKER_WIDTHS.delay)}
-                    />
+                    <BoardBlock text="" length={TICKER_WIDTHS.delay} />
                   </td>
                 </tr>
               );
@@ -590,7 +634,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </tbody>
         </table>
       </section>
-
+{/* 
       <section style={{ marginTop: "1.5rem" }}>
         <h3>Departures</h3>
         <table
@@ -613,7 +657,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             {Array.from({ length: rowsCount }).map((_, idx) => {
               const item = displayedDepartures[idx];
               if (item) {
-                const { p, time, state, delayText } = item;
+                const { p, time, state, delayText, expected } = item;
                 const destIcao = p.flight_plan?.arrival ?? null;
                 const destAirport = destIcao
                   ? getAirportCoords(destIcao)
@@ -628,30 +672,35 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const destLabel = destName ?? "—";
                 const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
+                // display EST HH:MM for enroute/departed flights when expected arrival exists
+                const displayState =
+                  expected && (state === "Enroute" || state === "Departed")
+                    ? `EST ${formatTime(roundToNearest5(expected))}`
+                    : state || "";
                 return (
                   <tr key={`${p.callsign}-dep`}>
                     <td>
-                      <TickerCell
+                      <BoardBlock
                         text={padTickerText(local, TICKER_WIDTHS.localTime)}
                       />
                     </td>
                     <td>
-                      <TickerCell
+                      <BoardBlock
                         text={padTickerText(cs, TICKER_WIDTHS.callsign)}
                       />
                     </td>
                     <td>
-                      <TickerCell
+                      <BoardBlock
                         text={padTickerText(destLabel, TICKER_WIDTHS.name)}
                       />
                     </td>
                     <td>
-                      <TickerCell
-                        text={padTickerText(state || "", TICKER_WIDTHS.state)}
+                      <BoardBlock
+                        text={padTickerText(displayState, TICKER_WIDTHS.state)}
                       />
                     </td>
                     <td>
-                      <TickerCell
+                      <BoardBlock
                         text={padTickerText(
                           formatDelayForCell(delayText || ""),
                           TICKER_WIDTHS.delay,
@@ -664,27 +713,27 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               return (
                 <tr key={`empty-dep-${idx}`}>
                   <td>
-                    <TickerCell
+                    <BoardBlock
                       text={padTickerText(null, TICKER_WIDTHS.localTime)}
                     />
                   </td>
                   <td>
-                    <TickerCell
+                    <BoardBlock
                       text={padTickerText(null, TICKER_WIDTHS.callsign)}
                     />
                   </td>
                   <td>
-                    <TickerCell
+                    <BoardBlock
                       text={padTickerText(null, TICKER_WIDTHS.name)}
                     />
                   </td>
                   <td>
-                    <TickerCell
+                    <BoardBlock
                       text={padTickerText(null, TICKER_WIDTHS.state)}
                     />
                   </td>
                   <td>
-                    <TickerCell
+                    <BoardBlock
                       text={padTickerText(null, TICKER_WIDTHS.delay)}
                     />
                   </td>
@@ -693,7 +742,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             })}
           </tbody>
         </table>
-      </section>
+      </section> */}
 
       <div
         style={{
@@ -739,6 +788,18 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             style={{ width: "4rem" }}
           />
         </label>
+
+        <div
+          style={{
+            marginLeft: "auto",
+            textAlign: "right",
+            color: "#999",
+            fontSize: "0.9rem",
+          }}
+        >
+          <div>Soubor: {formatTimestamp(lastDataTimestamp)}</div>
+          <div>Poslední pokus: {formatTimestamp(lastFetchAttempt)}</div>
+        </div>
       </div>
     </div>
   );
