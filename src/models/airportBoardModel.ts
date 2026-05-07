@@ -283,7 +283,9 @@ export function buildBoardData(opts: {
           // show numeric delay like +HH:MM (not the word 'Delayed')
           delayText = `+${hhStr}:${mmStr}`
         }
-      } else if (state === 'Gate Open' && time) {
+      } else if ((state === 'Gate Open' || state === 'Departed') && time) {
+        // keep showing numeric delay also when flight has transitioned to
+        // 'Departed' so the delay value isn't lost when state changes.
         const now = new Date()
         if (now.getTime() > time.getTime()) {
           const diffMin = Math.ceil((now.getTime() - time.getTime()) / 60000)
@@ -292,7 +294,6 @@ export function buildBoardData(opts: {
           const mm = rounded % 60
           const hhStr = hh.toString().padStart(2, '0')
           const mmStr = mm.toString().padStart(2, '0')
-          // show numeric delay like +HH:MM (not the word 'Delayed')
           delayText = `+${hhStr}:${mmStr}`
         }
       }

@@ -123,9 +123,11 @@ section table td {
   vertical-align: middle;
 }
 section table thead th {
-  background: #555;
+  background: #559;
   color: #fff;
   font-weight: 600;
+  font-family: monospace;
+  padding-left: 4px;
 }
 
 /* Ticker-board overrides: smaller letters and dark theme */
