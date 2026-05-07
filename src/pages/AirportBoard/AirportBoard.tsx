@@ -684,10 +684,10 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const destLabel = destName ?? "—";
                 const local = time ? formatTime(roundToNearest5(time)) : "—";
                 const cs = splitCallsign(p.callsign);
-                // display EST HH:MM for enroute/departed flights when expected arrival exists
+                // display Est HH:MM for enroute/departed flights when expected arrival exists
                 const displayState =
                   expected && (state === "Enroute" || state === "Departed")
-                    ? `EST ${formatTime(roundToNearest5(expected))}`
+                    ? `Est ${formatTime(roundToNearest5(expected))}`
                     : state || "";
                 return (
                   <tr key={`${p.callsign}-dep`}>
