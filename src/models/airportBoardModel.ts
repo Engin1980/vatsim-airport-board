@@ -270,7 +270,8 @@ export function buildBoardData(opts: {
           const mm = rounded % 60
           const hhStr = hh.toString().padStart(2, '0')
           const mmStr = mm.toString().padStart(2, '0')
-          delayText = `Delayed (+${hhStr}:${mmStr})`
+          // show numeric delay like +HH:MM (not the word 'Delayed')
+          delayText = `+${hhStr}:${mmStr}`
         }
       } else if (state === 'Gate Open' && time) {
         const now = new Date()
@@ -281,7 +282,8 @@ export function buildBoardData(opts: {
           const mm = rounded % 60
           const hhStr = hh.toString().padStart(2, '0')
           const mmStr = mm.toString().padStart(2, '0')
-          delayText = `Delayed (+${hhStr}:${mmStr})`
+          // show numeric delay like +HH:MM (not the word 'Delayed')
+          delayText = `+${hhStr}:${mmStr}`
         }
       }
 
