@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useAirportBoard from "../../hooks/useAirportBoard";
 import BoardBlock from "./BoardBlock";
 import { roundToNearest5 } from "../../models/airportBoardModel";
@@ -36,6 +36,22 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
   const airportTz = airportsMap?.get(icao.toUpperCase())?.timezone ?? undefined
 
+  const [now, setNow] = useState<Date>(new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 5000)
+    return () => clearInterval(id)
+  }, [])
+
+  function formatNowByMode(d: Date): string {
+    try {
+      if (timeMode === 'Zulu') return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+      if (timeMode === 'Airport' && airportTz) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: airportTz })
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } catch (e) {
+      return '—'
+    }
+  }
+
   function formatByMode(d: Date | null): string {
     if (!d) return '—'
     const rd = roundToNearest5(d)
@@ -65,6 +81,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
   return (
     <div style={{ padding: "0.01rem" }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.25rem' }}>
+        <BoardBlock text={formatNowByMode(now)} length={TICKER_WIDTHS.localTime} />
+      </div>
       <section style={{ marginTop: "1rem" }}>
         <h3>Arrivals</h3>
         <table
