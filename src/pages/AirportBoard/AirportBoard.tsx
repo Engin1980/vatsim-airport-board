@@ -69,7 +69,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [arrPage, setArrPage] = useState(0);
   const [depPage, setDepPage] = useState(0);
   const [autoRotatePages, setAutoRotatePages] = useState(true);
-  const [rotateIntervalSec, setRotateIntervalSec] = useState<number>(15);
+  const [firstPageDurationSec, setFirstPageDurationSec] = useState<number>(15);
+  const [otherPagesIntervalSec, setOtherPagesIntervalSec] = useState<number>(15);
 
   // Persistable UI settings key (per-ICAO)
   const settingsKey = `airportBoardSettings:${icao.toUpperCase()}`;
@@ -84,7 +85,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
         if (s) {
           if (s.timeMode) setTimeMode(s.timeMode);
           if (typeof s.autoRotatePages === "boolean") setAutoRotatePages(s.autoRotatePages);
-          if (typeof s.rotateIntervalSec === "number") setRotateIntervalSec(s.rotateIntervalSec);
+          if (typeof s.firstPageDurationSec === "number") setFirstPageDurationSec(s.firstPageDurationSec);
+          if (typeof s.otherPagesIntervalSec === "number") setOtherPagesIntervalSec(s.otherPagesIntervalSec);
           if (typeof s.rowsCount === "number") setRowsCount(s.rowsCount);
           if (typeof s.showAllDepartures === "boolean") setShowAllDepartures(s.showAllDepartures);
         }
@@ -104,7 +106,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       const s = {
         timeMode,
         autoRotatePages,
-        rotateIntervalSec,
+        firstPageDurationSec,
+        otherPagesIntervalSec,
         rowsCount,
         showAllDepartures,
       };
@@ -112,7 +115,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     } catch (e) {
       // ignore
     }
-  }, [settingsLoaded, settingsKey, timeMode, autoRotatePages, rotateIntervalSec, rowsCount, showAllDepartures]);
+  }, [settingsLoaded, settingsKey, timeMode, autoRotatePages, firstPageDurationSec, otherPagesIntervalSec, rowsCount, showAllDepartures]);
 
   // header is rendered inside table thead so it lines up naturally
 
@@ -163,6 +166,18 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     Math.ceil((departures?.length || 0) / rowsCount),
   );
 
+  // Refs to hold latest page values for scheduling logic (avoid stale closures)
+  const arrPageRef = useRef(arrPage);
+  const depPageRef = useRef(depPage);
+
+  // Keep refs in sync when external code updates pages
+  useEffect(() => {
+    arrPageRef.current = arrPage;
+  }, [arrPage]);
+  useEffect(() => {
+    depPageRef.current = depPage;
+  }, [depPage]);
+
   useEffect(() => {
     if (arrPage >= arrTotalPages) setArrPage(0);
   }, [arrTotalPages, arrPage]);
@@ -173,20 +188,99 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
   // no per-page filter; nothing to reset
 
+  // Separate rotation timers for arrivals and departures so they don't stay
+  // in lockstep when their page counts differ.
   useEffect(() => {
-    // If interval is 0, keep both tables fixed to the first page
-    if (rotateIntervalSec === 0) {
+    if (!autoRotatePages) return;
+
+    // If other-pages interval is 0, lock arrivals to first page only
+    if (otherPagesIntervalSec === 0) {
       setArrPage(0);
+      return;
+    }
+
+    if (arrTotalPages <= 1) return;
+
+    let timeoutIdRef: { id: number | null } = { id: null };
+    let cancelled = false;
+
+    const clearExisting = () => {
+      if (timeoutIdRef.id != null) {
+        clearTimeout(timeoutIdRef.id);
+        timeoutIdRef.id = null;
+      }
+    };
+
+    const schedule = (nextPage: number) => {
+      clearExisting();
+      if (cancelled) return;
+      const delay = nextPage === 0 ? firstPageDurationSec : otherPagesIntervalSec;
+      timeoutIdRef.id = window.setTimeout(tick, Math.max(0, delay) * 1000);
+    };
+
+    const tick = () => {
+      if (cancelled) return;
+      const current = arrPageRef.current;
+      const next = arrTotalPages > 1 ? (current + 1) % arrTotalPages : 0;
+      arrPageRef.current = next;
+      setArrPage(next);
+      schedule(next);
+    };
+
+    // initial schedule
+    schedule(arrPageRef.current === 0 ? 0 : arrPageRef.current);
+
+    return () => {
+      cancelled = true;
+      clearExisting();
+    };
+  }, [autoRotatePages, firstPageDurationSec, otherPagesIntervalSec, arrTotalPages]);
+
+  useEffect(() => {
+    if (!autoRotatePages) return;
+
+    // If other-pages interval is 0, lock departures to first page only
+    if (otherPagesIntervalSec === 0) {
       setDepPage(0);
       return;
     }
-    if (!autoRotatePages) return;
-    const id = setInterval(() => {
-      setArrPage((p) => (arrTotalPages > 1 ? (p + 1) % arrTotalPages : 0));
-      setDepPage((p) => (depTotalPages > 1 ? (p + 1) % depTotalPages : 0));
-    }, rotateIntervalSec * 1000);
-    return () => clearInterval(id);
-  }, [autoRotatePages, rotateIntervalSec, arrTotalPages, depTotalPages]);
+
+    if (depTotalPages <= 1) return;
+
+    let timeoutIdRef: { id: number | null } = { id: null };
+    let cancelled = false;
+
+    const clearExisting = () => {
+      if (timeoutIdRef.id != null) {
+        clearTimeout(timeoutIdRef.id);
+        timeoutIdRef.id = null;
+      }
+    };
+
+    const schedule = (nextPage: number) => {
+      clearExisting();
+      if (cancelled) return;
+      const delay = nextPage === 0 ? firstPageDurationSec : otherPagesIntervalSec;
+      timeoutIdRef.id = window.setTimeout(tick, Math.max(0, delay) * 1000);
+    };
+
+    const tick = () => {
+      if (cancelled) return;
+      const current = depPageRef.current;
+      const next = depTotalPages > 1 ? (current + 1) % depTotalPages : 0;
+      depPageRef.current = next;
+      setDepPage(next);
+      schedule(next);
+    };
+
+    // initial schedule
+    schedule(depPageRef.current === 0 ? 0 : depPageRef.current);
+
+    return () => {
+      cancelled = true;
+      clearExisting();
+    };
+  }, [autoRotatePages, firstPageDurationSec, otherPagesIntervalSec, depTotalPages]);
 
   // Current time rendering moved to `CurrentTime` component.
 
@@ -560,7 +654,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             <select
               value={timeMode}
               onChange={(e) => setTimeMode(e.target.value as any)}
-              style={{ width: "8rem" }}
+              style={{ width: "5rem" }}
             >
               <option value="Airport">Airport</option>
               <option value="User">User</option>
@@ -588,16 +682,35 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               gap: "0.5rem",
             }}
           >
-            <span> Interval (s):</span>
+            <span>Interval (s):</span>
             <input
               type="number"
-              min={0}
-              value={rotateIntervalSec}
+              min={5}
+              value={firstPageDurationSec}
               onChange={(e) => {
-                const v = parseInt(e.target.value || "30", 10);
-                setRotateIntervalSec(isNaN(v) ? 30 : Math.max(0, v));
+                const v = parseInt(e.target.value || "15", 10);
+                setFirstPageDurationSec(isNaN(v) ? 15 : Math.max(0, v));
               }}
-              style={{ width: "4rem" }}
+              style={{ width: "2rem" }}
+            />
+          </label>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <span>/</span>
+            <input
+              type="number"
+              min={5}
+              value={otherPagesIntervalSec}
+              onChange={(e) => {
+                const v = parseInt(e.target.value || "15", 10);
+                setOtherPagesIntervalSec(isNaN(v) ? 15 : Math.max(0, v));
+              }}
+              style={{ width: "2rem" }}
             />
           </label>
           <label
@@ -616,7 +729,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
                 const v = parseInt(e.target.value || "7", 10);
                 setRowsCount(isNaN(v) ? 7 : Math.max(1, v));
               }}
-              style={{ width: "4rem" }}
+              style={{ width: "2rem" }}
             />
           </label>
 
