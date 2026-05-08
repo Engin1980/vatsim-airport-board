@@ -47,6 +47,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [autoRotatePages, setAutoRotatePages] = useState(true)
   const [rotateIntervalSec, setRotateIntervalSec] = useState<number>(15)
 
+  // header is rendered inside table thead so it lines up naturally
+
   const prevRowsCountArrRef = useRef<number>(rowsCount)
   const prevRowsCountDepRef = useRef<number>(rowsCount)
 
@@ -147,14 +149,6 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       </div>
 
       <section style={{ marginTop: "1rem" }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>Arrivals</h3>
-          <div style={{ color: '#88F', fontSize: '0.9rem' }} aria-hidden>
-            {Array.from({ length: arrTotalPages }).map((_, i) => (
-              <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>{i === arrPage ? '⏺' : '○'}</span>
-            ))}
-          </div>
-        </div>
         <table
           style={{
             borderCollapse: "collapse",
@@ -163,6 +157,18 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           }}
         >
           <thead>
+            <tr>
+              <th colSpan={5} style={{ padding: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>Arrivals</h3>
+                  <div style={{ color: '#ccf', fontSize: '0.9rem' }} aria-hidden>
+                    {Array.from({ length: arrTotalPages }).map((_, i) => (
+                      <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>{i === arrPage ? '⬤' : '⭘'}</span>
+                    ))}
+                  </div>
+                </div>
+              </th>
+            </tr>
             <tr>
               <th>Time</th>
               <th>Flight</th>
@@ -235,14 +241,6 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       </section>
 
       <section style={{ marginTop: "1.5rem" }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>Departures</h3>
-          <div style={{ color: '#88F', fontSize: '0.9rem' }} aria-hidden>
-            {Array.from({ length: depTotalPages }).map((_, i) => (
-              <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>{i === depPage ? '⏺' : '○'}</span>
-            ))}
-          </div>
-        </div>
         <table
           style={{
             borderCollapse: "collapse",
@@ -251,6 +249,18 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           }}
         >
           <thead>
+            <tr>
+              <th colSpan={5} style={{ padding: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0}}>Departures</h3>
+                  <div style={{ color: '#ccf', fontSize: '0.9rem' }} aria-hidden>
+                    {Array.from({ length: depTotalPages }).map((_, i) => (
+                      <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>{i === depPage ? '⬤' : '⭘'}</span>
+                    ))}
+                  </div>
+                </div>
+              </th>
+            </tr>
             <tr>
               <th>Time</th>
               <th>Flight</th>
