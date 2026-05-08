@@ -1,61 +1,60 @@
-# VATSIM Airport Board — co to je
+# ✈️ VATSIM Airport Board
 
-  VATSIM Airport Board je jednoduchá webová tabule sloužící k přehledu příletů a odletů pro vybrané letiště. Je navržena tak, aby se dala spustit lokálně i nasadit jako malá veřejná stránka — hlavní zaměření je na čitelné zobrazení letů, jednoduché stránkování a možnost přepínat zdroje dat.
+[![Live app](https://img.shields.io/badge/app-live-blue.svg)](https://vatsim-airport-board-dusky.vercel.app/#/airport/BIIS) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-  Pro koho je to užitečné
-  - Pro provozovatele virtuálních letišť, kteří chtějí rychlou nástěnku s přehledem aktuálních letů.
-  - Pro streamery / pozorovatele provozu, kteří chtějí zobrazit tabuli na druhém monitoru nebo do streamu.
+VATSIM Airport Board is a simple flight board web app that shows arrivals and departures for a selected airport. It’s designed to run locally or be deployed as a small public page — the focus is on a clear flight display, easy paging, and configurable data sources.
 
-  Co umí (rychlý přehled)
-  - Zobrazuje dvě oddělené tabule: přílety (Arrivals) a odlety (Departures).
-  - Podporuje stránkování řádků s automatickým otáčením stránek.
-  - Každá tabule má vlastní rotaci — interval pro první stránku a interval pro ostatní stránky lze nastavit.
-  - Možnost zobrazit „vzdálené“ odlety a měnit počet řádků na stránku.
+## 🎯 Who it's for
+- Virtual airport operators who want a lightweight, easy-to-read board showing current flights.
+- Streamers or traffic observers who want a compact display for a second screen or an overlay.
 
-## Vyzkoušení
+## ✨ What it does (quick overview)
+- Displays two separate boards: Arrivals and Departures.
+- Supports paged rows with automatic page rotation.
+- Each board has its own rotation schedule — you can set the duration for the first page and a separate interval for other pages.
+- Options to show remote departures and to change the number of rows per page.
 
-Aplikace je dostupná na [https://vatsim-airport-board-dusky.vercel.app](https://vatsim-airport-board-dusky.vercel.app/#/airport/BIIS).
+## 🔗 Live App
 
-## Vlastní lokální instalace
-  
-  Jak začít (rychle)
-  1) Nainstalujte závislosti:
+A live app is available at: https://vatsim-airport-board-dusky.vercel.app
 
-  ```bash
-  npm install
-  ```
+## 🛠️ Run locally
 
-  2) Spusťte vývojový server a otevřete prohlížeč na `http://localhost:5173`:
+Get started quickly:
 
-  ```bash
-  npm run dev
-  ```
+```bash
+npm install
+npm run dev
+# open http://localhost:5173
+```
 
-  3) Do produkce sestavíte pomocí:
+Build for production and preview locally:
 
-  ```bash
-  npm run build
-  npm run preview
-  ```
+```bash
+npm run build
+npm run preview
+```
 
-## Popis použití
+## ▶️ Example of usage
 
-  Jak aplikaci používat
-  - Na úvodní stránce vyberte letiště (ICAO) ze seznamu.
-  - Na stránce tabule můžete pomocí ovládacích prvků v dolním panelu upravit: počet řádků, zapnout/vypnout rotaci stránek, nastavit délku zobrazení první stránky a délku pro ostatní stránky, a zobrazit vzdálené odlety.
-  - Nastavení jsou ukládána do `localStorage` pro každý vybraný ICAO zvlášť.
+### ▶️ How to use the app
+- From the home screen select an airport (by ICAO) from the list.
+- On the board page you can change settings in the bottom control panel: number of rows, enable/disable page rotation, set the duration for the first page and for other pages, and toggle remote departures.
+- Settings are stored in `localStorage` per ICAO.
 
-  Kde jsou data
-  - Seznam letišť: `public/data/airports.csv` (aplikace jej načítá při startu a převádí na mapu ICAO → airport).
-  - Volitelný zdroj reálných dat: VATSIM v3 feed (služba je připravená v `src/services/vatsimService.ts`).
+### 📦 Where the data comes from
+- Airports list: `public/data/airports.csv` — loaded at startup and used to map ICAO codes to airport names/timezones.
+- Optional live data: VATSIM v3 feed. A loader is prepared in `src/services/vatsimService.ts`.
 
-  ## Přispívání
-  - Najdete-li chybu nebo chcete funkci, otevřete issue nebo PR s popisem změny.
+## 🤝 Contributing
+- Found a bug or want a feature? Open an issue or submit a pull request with a description of the change.
 
-  ## Krátce o technologii
-  Technické detaily nejsou nutné pro uživatele tabule, ale v projektu najdete běžné webové technologie: React + TypeScript a build přes Vite. Hlavní části aplikace jsou v `src/pages/AirportBoard` (UI tabule) a `src/services` (data loader).
+## 🧰 Tech notes (for developers)
+- The app is built with React + TypeScript and uses Vite for bundling. Main UI lives in `src/pages/AirportBoard` and data loaders are under `src/services`.
 
-  ## Poznámky
-  - Projekt nemá v repozitáři explicitní `LICENSE` — přidejte, pokud chcete projekt publikovat pod konkrétní licencí.
+## 📝 Notes
+- This repository includes a `LICENSE` file (MIT). Development instructions and helpers are in `./.github/copilot-instructions.md`.
 
-  - Soubor s interními instrukcemi (vývoj): viz `./.github/copilot-instructions.md`.
+## License
+
+This project is licensed under the MIT License — see the `LICENSE` file for details.
