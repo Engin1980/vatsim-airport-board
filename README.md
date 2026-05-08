@@ -60,10 +60,12 @@ npm run preview
 
 - The app is built with React + TypeScript and uses Vite for bundling. Main UI lives in `src/pages/AirportBoard` and data loaders are under `src/services`.
 
-## 📝 Notes
-
-- This repository includes a `LICENSE` file (MIT). Development instructions and helpers are in `./.github/copilot-instructions.md`.
-
-## License
+## 📝 License
 
 This project is licensed under the MIT License — see the `LICENSE` file for details.
+
+## 🙏 Acknowledgements
+
+We use the free airport database from http://ourairports.com. Thank you to the project maintainers for providing this data.
+
+We use the `react-ticker-board` package for improved visuals and smooth tickers — thanks to the maintainers for their work.
