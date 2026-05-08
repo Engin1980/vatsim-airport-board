@@ -118,7 +118,6 @@ section table td {
   background: #000;
   color: #fff;
   border: 1px solid #111;
-  /* padding: 0.4rem 0.4rem; */
   text-align: left;
   vertical-align: middle;
 }
@@ -138,12 +137,12 @@ ul.board {
 }
 
 ul.board li div.ticker-row {
-  padding: 0.1rem !important;
+  padding: 0.0rem 0.2rem !important;
 }
 
 span.ticker {
   color: #FF0 !important;
-  padding: 0.2rem 0.2rem !important;
+  padding: 0.1rem 0.2rem !important;
 }
 
 /* ensure the board sits well inside table cells */
