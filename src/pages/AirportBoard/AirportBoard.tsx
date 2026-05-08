@@ -39,6 +39,33 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
   const airportTz = airportsMap?.get(icao.toUpperCase())?.timezone ?? undefined;
 
+  const _airportRawName =
+    airportsMap?.get(icao.toUpperCase())?.name ?? undefined;
+  const airportShortName =
+    _airportRawName && _airportRawName.endsWith(" Airport")
+      ? _airportRawName.slice(0, -" Airport".length)
+      : _airportRawName;
+
+  const headerEl = (
+    <header className="app-header">
+      <h1>
+        <a href="#/" aria-label="Back to airport select" style={{ cursor: "pointer", marginRight: 8, color: "#666", textDecoration: 'none' }}>
+          ⇖
+        </a>
+        {airportShortName ? (
+          <>
+            {icao.toUpperCase()} - {airportShortName}
+          </>
+        ) : (
+          <>{icao.toUpperCase()}</>
+        )}
+        <span style={{ marginLeft: 8, color: "#666", fontSize: "0.95rem" }}>
+          VATSIM Airport Board
+        </span>
+      </h1>
+    </header>
+  );
+
   const [arrPage, setArrPage] = useState(0);
   const [depPage, setDepPage] = useState(0);
   const [autoRotatePages, setAutoRotatePages] = useState(true);
@@ -153,397 +180,417 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     }
   }
 
-  if (error) return <div>Error loading data: {error}</div>;
-  if (loadingAirports) return <div>Loading airports...</div>;
-  if (loadingData) return <div>Loading flights...</div>;
+  if (error)
+    return (
+      <>
+        {headerEl}
+        <div>Error loading data: {error}</div>
+      </>
+    );
+  if (loadingAirports)
+    return (
+      <>
+        {headerEl}
+        <div>Loading airports...</div>
+      </>
+    );
+  if (loadingData)
+    return (
+      <>
+        {headerEl}
+        <div>Loading flights...</div>
+      </>
+    );
 
   return (
-    <div style={{ padding: "0.01rem", paddingBottom: "4rem" }}>
-      <section style={{ marginTop: "1rem" }}>
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "auto",
-            display: "inline-table",
-          }}
-        >
-          <thead>
-            <tr>
-              <th colSpan={5} style={{ padding: 4 }}>
-        
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <h3 style={{ margin: 0 }}>Arrivals</h3>
+    <>
+      {headerEl}
+      <div style={{ padding: "0.01rem", paddingBottom: "4rem" }}>
+        <section style={{ marginTop: "1rem" }}>
+          <table
+            style={{
+              borderCollapse: "collapse",
+              width: "auto",
+              display: "inline-table",
+            }}
+          >
+            <thead>
+              <tr>
+                <th colSpan={5} style={{ padding: 4 }}>
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "flex-end",
+                      justifyContent: "space-between",
+                      alignItems: "center",
                     }}
                   >
+                    <h3 style={{ margin: 0 }}>Arrivals</h3>
                     <div
                       style={{
-                        paddingRight: 8,
-                        color: "#ccf",
-                        fontSize: "0.9rem",
+                        display: "flex",
+                        justifyContent: "flex-end",
                       }}
-                      aria-hidden
                     >
-                      {Array.from({ length: arrTotalPages }).map((_, i) => (
-                        <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>
-                          {i === arrPage ? "⬤" : "⭘"}
-                        </span>
-                      ))}
-                    </div>
-                    <div>
-                      <CurrentTime
-                        timeMode={timeMode}
-                        airportTz={airportTz}
-                        length={TICKER_WIDTHS.localTime}
-                      />
+                      <div
+                        style={{
+                          paddingRight: 8,
+                          color: "#ccf",
+                          fontSize: "0.9rem",
+                        }}
+                        aria-hidden
+                      >
+                        {Array.from({ length: arrTotalPages }).map((_, i) => (
+                          <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>
+                            {i === arrPage ? "⬤" : "⭘"}
+                          </span>
+                        ))}
+                      </div>
+                      <div>
+                        <CurrentTime
+                          timeMode={timeMode}
+                          airportTz={airportTz}
+                          length={TICKER_WIDTHS.localTime}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </th>
-            </tr>
-            <tr>
-              <th>Time</th>
-              <th>Flight</th>
-              <th>Origin</th>
-              <th>State</th>
-              <th>Delay</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: rowsCount }).map((_, idx) => {
-              const pageStart = arrPage * rowsCount
-              const item = arrivals[pageStart + idx];
-              if (item) {
-                const {
-                  callsignSplit,
-                  originLabel,
-                  state,
-                  delayText,
-                  expected,
-                  time,
-                } = item;
-                const displayState =
-                  expected && state === "Enroute"
-                    ? `Est ${formatByMode(expected)}`
-                    : state || "";
+                </th>
+              </tr>
+              <tr>
+                <th>Time</th>
+                <th>Flight</th>
+                <th>Origin</th>
+                <th>State</th>
+                <th>Delay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: rowsCount }).map((_, idx) => {
+                const pageStart = arrPage * rowsCount;
+                const item = arrivals[pageStart + idx];
+                if (item) {
+                  const {
+                    callsignSplit,
+                    originLabel,
+                    state,
+                    delayText,
+                    expected,
+                    time,
+                  } = item;
+                  const displayState =
+                    expected && state === "Enroute"
+                      ? `Est ${formatByMode(expected)}`
+                      : state || "";
+                  return (
+                    <tr key={`row-arr-${idx}`}>
+                      <td>
+                        <BoardBlock
+                          text={formatByMode(time)}
+                          length={TICKER_WIDTHS.localTime}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={callsignSplit}
+                          length={TICKER_WIDTHS.callsign}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={originLabel}
+                          length={TICKER_WIDTHS.name}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={displayState}
+                          length={TICKER_WIDTHS.state}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={delayText || ""}
+                          length={TICKER_WIDTHS.delay}
+                        />
+                      </td>
+                    </tr>
+                  );
+                }
                 return (
                   <tr key={`row-arr-${idx}`}>
                     <td>
-                      <BoardBlock
-                        text={formatByMode(time)}
-                        length={TICKER_WIDTHS.localTime}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={callsignSplit}
-                        length={TICKER_WIDTHS.callsign}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.callsign} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={originLabel}
-                        length={TICKER_WIDTHS.name}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.name} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={displayState}
-                        length={TICKER_WIDTHS.state}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.state} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={delayText || ""}
-                        length={TICKER_WIDTHS.delay}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.delay} />
                     </td>
                   </tr>
                 );
-              }
-              return (
-                <tr key={`row-arr-${idx}`}>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.callsign} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.name} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.state} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.delay} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
+              })}
+            </tbody>
+          </table>
+        </section>
 
-      <section style={{ marginTop: "1.5rem" }}>
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "auto",
-            display: "inline-table",
-          }}
-        >
-          <thead>
-            <tr>
-              <th colSpan={5} style={{ padding: 4 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <h3 style={{ margin: 0 }}>Departures</h3>
+        <section style={{ marginTop: "1.5rem" }}>
+          <table
+            style={{
+              borderCollapse: "collapse",
+              width: "auto",
+              display: "inline-table",
+            }}
+          >
+            <thead>
+              <tr>
+                <th colSpan={5} style={{ padding: 4 }}>
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "flex-end",
+                      justifyContent: "space-between",
+                      alignItems: "center",
                     }}
                   >
+                    <h3 style={{ margin: 0 }}>Departures</h3>
                     <div
                       style={{
-                        paddingRight: 8,
-                        color: "#ccf",
-                        fontSize: "0.9rem",
+                        display: "flex",
+                        justifyContent: "flex-end",
                       }}
-                      aria-hidden
                     >
-                      {Array.from({ length: depTotalPages }).map((_, i) => (
-                        <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>
-                          {i === depPage ? "⬤" : "⭘"}
-                        </span>
-                      ))}
-                    </div>
-                    <div>
-                      <CurrentTime
-                        timeMode={timeMode}
-                        airportTz={airportTz}
-                        length={TICKER_WIDTHS.localTime}
-                      />
+                      <div
+                        style={{
+                          paddingRight: 8,
+                          color: "#ccf",
+                          fontSize: "0.9rem",
+                        }}
+                        aria-hidden
+                      >
+                        {Array.from({ length: depTotalPages }).map((_, i) => (
+                          <span key={i} style={{ marginLeft: i === 0 ? 0 : 6 }}>
+                            {i === depPage ? "⬤" : "⭘"}
+                          </span>
+                        ))}
+                      </div>
+                      <div>
+                        <CurrentTime
+                          timeMode={timeMode}
+                          airportTz={airportTz}
+                          length={TICKER_WIDTHS.localTime}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </th>
-            </tr>
-            <tr>
-              <th>Time</th>
-              <th>Flight</th>
-              <th>Destination</th>
-              <th>State</th>
-              <th>Delay</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: rowsCount }).map((_, idx) => {
-              const pageStart = depPage * rowsCount
-              const item = departures[pageStart + idx];
-              if (item) {
-                const {
-                  callsignSplit,
-                  destLabel,
-                  state,
-                  delayText,
-                  expected,
-                  time,
-                } = item;
-                const displayState =
-                  expected && (state === "Enroute" || state === "Departed")
-                    ? `Departed`
-                    : state || "";
+                </th>
+              </tr>
+              <tr>
+                <th>Time</th>
+                <th>Flight</th>
+                <th>Destination</th>
+                <th>State</th>
+                <th>Delay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: rowsCount }).map((_, idx) => {
+                const pageStart = depPage * rowsCount;
+                const item = departures[pageStart + idx];
+                if (item) {
+                  const {
+                    callsignSplit,
+                    destLabel,
+                    state,
+                    delayText,
+                    expected,
+                    time,
+                  } = item;
+                  const displayState =
+                    expected && (state === "Enroute" || state === "Departed")
+                      ? `Departed`
+                      : state || "";
+                  return (
+                    <tr key={`row-dep-${idx}`}>
+                      <td>
+                        <BoardBlock
+                          text={formatByMode(time)}
+                          length={TICKER_WIDTHS.localTime}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={callsignSplit}
+                          length={TICKER_WIDTHS.callsign}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={destLabel}
+                          length={TICKER_WIDTHS.name}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={displayState}
+                          length={TICKER_WIDTHS.state}
+                        />
+                      </td>
+                      <td>
+                        <BoardBlock
+                          text={delayText || ""}
+                          length={TICKER_WIDTHS.delay}
+                        />
+                      </td>
+                    </tr>
+                  );
+                }
                 return (
                   <tr key={`row-dep-${idx}`}>
                     <td>
-                      <BoardBlock
-                        text={formatByMode(time)}
-                        length={TICKER_WIDTHS.localTime}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={callsignSplit}
-                        length={TICKER_WIDTHS.callsign}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.callsign} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={destLabel}
-                        length={TICKER_WIDTHS.name}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.name} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={displayState}
-                        length={TICKER_WIDTHS.state}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.state} />
                     </td>
                     <td>
-                      <BoardBlock
-                        text={delayText || ""}
-                        length={TICKER_WIDTHS.delay}
-                      />
+                      <BoardBlock text="" length={TICKER_WIDTHS.delay} />
                     </td>
                   </tr>
                 );
-              }
-              return (
-                <tr key={`row-dep-${idx}`}>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.localTime} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.callsign} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.name} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.state} />
-                  </td>
-                  <td>
-                    <BoardBlock text="" length={TICKER_WIDTHS.delay} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-
-      <div
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          padding: "0.75rem 1rem",
-          borderTop: "1px solid var(--border)",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
-          flexWrap: "wrap",
-          background: "var(--bg)",
-          color: "var(--text)",
-          zIndex: 1000,
-          boxShadow: "0 -2px 6px rgba(0,0,0,0.05)",
-        }}
-      >
-        <label
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={showAllDepartures}
-            onChange={(e) => setShowAllDepartures(e.target.checked)}
-          />
-          <span>Zobrazit vzdálené odlety</span>
-        </label>
-        <label
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <span>Čas:</span>
-          <select
-            value={timeMode}
-            onChange={(e) => setTimeMode(e.target.value as any)}
-            style={{ width: "8rem" }}
-          >
-            <option value="Airport">Airport</option>
-            <option value="User">User</option>
-            <option value="Zulu">Zulu</option>
-          </select>
-        </label>
-        <label
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={autoRotatePages}
-            onChange={(e) => setAutoRotatePages(e.target.checked)}
-          />
-          <span>Stránkování</span>
-        </label>
-        <label
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <span> Interval (s):</span>
-          <input
-            type="number"
-            min={0}
-            value={rotateIntervalSec}
-            onChange={(e) => {
-              const v = parseInt(e.target.value || "30", 10);
-              setRotateIntervalSec(isNaN(v) ? 30 : Math.max(0, v));
-            }}
-            style={{ width: "4rem" }}
-          />
-        </label>
-        <label
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <span>Počet řádků:</span>
-          <input
-            type="number"
-            min={1}
-            value={rowsCount}
-            onChange={(e) => {
-              const v = parseInt(e.target.value || "7", 10);
-              setRowsCount(isNaN(v) ? 7 : Math.max(1, v));
-            }}
-            style={{ width: "4rem" }}
-          />
-        </label>
+              })}
+            </tbody>
+          </table>
+        </section>
 
         <div
           style={{
-            marginLeft: "auto",
-            textAlign: "right",
-            color: "#999",
-            fontSize: "0.9rem",
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: "0.75rem 1rem",
+            borderTop: "1px solid var(--border)",
+            display: "flex",
+            gap: "1rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+            background: "var(--bg)",
+            color: "var(--text)",
+            zIndex: 1000,
+            boxShadow: "0 -2px 6px rgba(0,0,0,0.05)",
           }}
         >
-          <div>Soubor: {formatTimestamp(lastDataTimestamp)}</div>
-          <div>Poslední pokus: {formatTimestamp(lastFetchAttempt)}</div>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={showAllDepartures}
+              onChange={(e) => setShowAllDepartures(e.target.checked)}
+            />
+            <span>Zobrazit vzdálené odlety</span>
+          </label>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <span>Čas:</span>
+            <select
+              value={timeMode}
+              onChange={(e) => setTimeMode(e.target.value as any)}
+              style={{ width: "8rem" }}
+            >
+              <option value="Airport">Airport</option>
+              <option value="User">User</option>
+              <option value="Zulu">Zulu</option>
+            </select>
+          </label>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={autoRotatePages}
+              onChange={(e) => setAutoRotatePages(e.target.checked)}
+            />
+            <span>Stránkování</span>
+          </label>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <span> Interval (s):</span>
+            <input
+              type="number"
+              min={0}
+              value={rotateIntervalSec}
+              onChange={(e) => {
+                const v = parseInt(e.target.value || "30", 10);
+                setRotateIntervalSec(isNaN(v) ? 30 : Math.max(0, v));
+              }}
+              style={{ width: "4rem" }}
+            />
+          </label>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <span>Počet řádků:</span>
+            <input
+              type="number"
+              min={1}
+              value={rowsCount}
+              onChange={(e) => {
+                const v = parseInt(e.target.value || "7", 10);
+                setRowsCount(isNaN(v) ? 7 : Math.max(1, v));
+              }}
+              style={{ width: "4rem" }}
+            />
+          </label>
+
+          <div
+            style={{
+              marginLeft: "auto",
+              textAlign: "right",
+              color: "#999",
+              fontSize: "0.9rem",
+            }}
+          >
+            <div>Soubor: {formatTimestamp(lastDataTimestamp)}</div>
+            <div>Poslední pokus: {formatTimestamp(lastFetchAttempt)}</div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

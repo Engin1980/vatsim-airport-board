@@ -35,28 +35,7 @@ function App() {
 
   return (
     <div className="app-root">
-      <header className="app-header">
-        <h1>
-          {(() => {
-            if (route.name === "airport" && route.icao && airports) {
-              const a = airports.get(route.icao.toUpperCase());
-              let name = a?.name;
-              if (name && name.endsWith(" Airport"))
-                name = name.slice(0, -" Airport".length);
-              return name ? (
-                <>
-                  {route.icao.toUpperCase()} - {name}
-                </>
-              ) : (
-                <>{route.icao.toUpperCase()}</>
-              );
-            }
-          })()}
-          <span style={{ marginLeft: 8, color: "#666", fontSize: "0.95rem" }}>
-            VATSIM Airport Board
-          </span>
-        </h1>        
-      </header>
+      
 
       {error && <div className="error">Error loading airports: {error}</div>}
 
