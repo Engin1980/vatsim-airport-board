@@ -91,6 +91,8 @@ export function buildBoardData(opts: {
   showAllDepartures?: boolean
   // optional map of previous departure states keyed by callsign (persist across polls)
   prevDepartureStates?: Map<string, string>
+  // optional map to persist fixed delay strings for departures (callsign -> "+HH:MM")
+  prevDepartureDelays?: Map<string, string>
 }) {
   const { pilots, profiles = [], airportsMap, icao, showAllDepartures = false, prevDepartureStates } = opts
   const ICAO = icao.toUpperCase()
@@ -222,6 +224,7 @@ export function buildBoardData(opts: {
 
   const departuresWithTime: BoardDeparture[] = departuresSource
     .map((p) => {
+      const key = (p.callsign ?? '').toString()
       const time = parseDepTime(p.flight_plan)
       const pos = getPilotPos(p)
       const speedRaw = (p as any).groundspeed ?? (p as any).ground_speed ?? (p as any).gs
@@ -270,32 +273,51 @@ export function buildBoardData(opts: {
         // ignore any errors reading the previous map
       }
 
+      // compute or reuse delay text
       let delayText = ''
-      if (isPrefile && time) {
-        const now = new Date()
-        if (now.getTime() > time.getTime()) {
-          const diffMin = Math.ceil((now.getTime() - time.getTime()) / 60000)
-          const rounded = Math.ceil(diffMin / 10) * 10
-          const hh = Math.floor(rounded / 60)
-          const mm = rounded % 60
-          const hhStr = hh.toString().padStart(2, '0')
-          const mmStr = mm.toString().padStart(2, '0')
-          // show numeric delay like +HH:MM (not the word 'Delayed')
-          delayText = `+${hhStr}:${mmStr}`
+      try {
+        const prevFixed = opts.prevDepartureDelays?.get(key)
+        if (prevFixed) {
+          // use persisted fixed delay if present
+          delayText = prevFixed
+        } else {
+          // helper to compute numeric delay +HH:MM when now > time
+          const computeNumeric = (t: Date) => {
+            const now = new Date()
+            if (now.getTime() <= t.getTime()) return ''
+            const diffMin = Math.ceil((now.getTime() - t.getTime()) / 60000)
+            const rounded = Math.ceil(diffMin / 10) * 10
+            const hh = Math.floor(rounded / 60)
+            const mm = rounded % 60
+            const hhStr = hh.toString().padStart(2, '0')
+            const mmStr = mm.toString().padStart(2, '0')
+            return `+${hhStr}:${mmStr}`
+          }
+
+          let dynamic = ''
+          if (isPrefile && time) {
+            dynamic = computeNumeric(time)
+          } else if ((state === 'Gate Open' || state === 'Departed') && time) {
+            // keep showing numeric delay also when flight has transitioned to
+            // 'Departed' so the delay value isn't lost when state changes.
+            dynamic = computeNumeric(time)
+          }
+
+          delayText = dynamic
+
+          // If we're transitioning now from not-GateClosed -> GateClosed,
+          // persist the numeric delay so it won't be updated further.
+          try {
+            const prev = prevDepartureStates && key ? prevDepartureStates.get(key) : null
+            if (prev !== 'Gate Closed' && state === 'Gate Closed' && dynamic) {
+              if (opts.prevDepartureDelays && key) opts.prevDepartureDelays.set(key, dynamic)
+            }
+          } catch (e) {
+            // ignore
+          }
         }
-      } else if ((state === 'Gate Open' || state === 'Departed') && time) {
-        // keep showing numeric delay also when flight has transitioned to
-        // 'Departed' so the delay value isn't lost when state changes.
-        const now = new Date()
-        if (now.getTime() > time.getTime()) {
-          const diffMin = Math.ceil((now.getTime() - time.getTime()) / 60000)
-          const rounded = Math.ceil(diffMin / 10) * 10
-          const hh = Math.floor(rounded / 60)
-          const mm = rounded % 60
-          const hhStr = hh.toString().padStart(2, '0')
-          const mmStr = mm.toString().padStart(2, '0')
-          delayText = `+${hhStr}:${mmStr}`
-        }
+      } catch (e) {
+        // ignore delay computation errors
       }
 
       let expected: Date | null = null
@@ -350,6 +372,18 @@ export function buildBoardData(opts: {
     })
 
   const displayedDepartures = departuresWithTime.filter((d) => showAllDepartures || (d.dist !== null && d.dist <= 50))
+
+  // prune prevDepartureDelays entries that are no longer present to avoid unbounded growth
+  try {
+    if (opts.prevDepartureDelays) {
+      const present = new Set(departuresWithTime.map((d) => ((d.p?.callsign) ?? '').toString()))
+      for (const k of Array.from(opts.prevDepartureDelays.keys())) {
+        if (!present.has(k)) opts.prevDepartureDelays.delete(k)
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 
   return { arrivals: displayedArrivals, departures: displayedDepartures }
 }

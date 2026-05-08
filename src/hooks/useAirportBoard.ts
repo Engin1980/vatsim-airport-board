@@ -120,6 +120,8 @@ export default function useAirportBoard(icao: string, opts?: { pollIntervalMs?: 
 
   // persistent map to remember departure states across polls (sticky 'Gate Closed')
   const prevDepartureStatesRef = useRef<Map<string, string>>(new Map())
+  // persistent map to remember fixed departure delays once Gate Closed
+  const prevDepartureDelaysRef = useRef<Map<string, string>>(new Map())
 
   const board = useMemo(() => {
     return buildBoardData({
@@ -130,6 +132,7 @@ export default function useAirportBoard(icao: string, opts?: { pollIntervalMs?: 
       rowsCount,
       showAllDepartures,
       prevDepartureStates: prevDepartureStatesRef.current,
+      prevDepartureDelays: prevDepartureDelaysRef.current,
     })
   }, [pilots, data?.profiles, airportsMap, icao, rowsCount, showAllDepartures])
 
