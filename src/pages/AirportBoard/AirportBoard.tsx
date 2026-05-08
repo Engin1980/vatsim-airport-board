@@ -43,24 +43,38 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [depPage, setDepPage] = useState(0);
   const [autoRotatePages, setAutoRotatePages] = useState(true);
   const [rotateIntervalSec, setRotateIntervalSec] = useState<number>(15);
+  const [filterText, setFilterText] = useState('')
 
   // header is rendered inside table thead so it lines up naturally
 
   const prevRowsCountArrRef = useRef<number>(rowsCount);
   const prevRowsCountDepRef = useRef<number>(rowsCount);
 
+  const lowerFilter = filterText.trim().toLowerCase()
+  const filteredArrivals = (arrivals || []).filter((a) => {
+    if (!lowerFilter) return true
+    const cs = (a.callsignSplit ?? '').toLowerCase()
+    const origin = (a.originLabel ?? '').toLowerCase()
+    const callsignRaw = ((a.p?.callsign) ?? '').toLowerCase()
+    return cs.includes(lowerFilter) || origin.includes(lowerFilter) || callsignRaw.includes(lowerFilter)
+  })
+  const filteredDepartures = (departures || []).filter((d) => {
+    if (!lowerFilter) return true
+    const cs = (d.callsignSplit ?? '').toLowerCase()
+    const dest = (d.destLabel ?? '').toLowerCase()
+    const callsignRaw = ((d.p?.callsign) ?? '').toLowerCase()
+    return cs.includes(lowerFilter) || dest.includes(lowerFilter) || callsignRaw.includes(lowerFilter)
+  })
+
   useEffect(() => {
     const prevArr = prevRowsCountArrRef.current;
     const prevDep = prevRowsCountDepRef.current;
 
     // If rowsCount changed for arrivals and we have arrivals data, recompute arrival page
-    if (prevArr !== rowsCount && (arrivals?.length || 0) > 0) {
+    if (prevArr !== rowsCount && (filteredArrivals?.length || 0) > 0) {
       setArrPage((prevPage) => {
         const globalIndex = prevPage * prevArr;
-        const newTotal = Math.max(
-          1,
-          Math.ceil((arrivals?.length || 0) / rowsCount),
-        );
+        const newTotal = Math.max(1, Math.ceil((filteredArrivals?.length || 0) / rowsCount));
         const newPage = Math.floor(globalIndex / rowsCount);
         return Math.min(Math.max(0, newPage), newTotal - 1);
       });
@@ -68,28 +82,19 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     }
 
     // If rowsCount changed for departures and we have departures data, recompute departure page
-    if (prevDep !== rowsCount && (departures?.length || 0) > 0) {
+    if (prevDep !== rowsCount && (filteredDepartures?.length || 0) > 0) {
       setDepPage((prevPage) => {
         const globalIndex = prevPage * prevDep;
-        const newTotal = Math.max(
-          1,
-          Math.ceil((departures?.length || 0) / rowsCount),
-        );
+        const newTotal = Math.max(1, Math.ceil((filteredDepartures?.length || 0) / rowsCount));
         const newPage = Math.floor(globalIndex / rowsCount);
         return Math.min(Math.max(0, newPage), newTotal - 1);
       });
       prevRowsCountDepRef.current = rowsCount;
     }
-  }, [rowsCount, arrivals?.length, departures?.length]);
+  }, [rowsCount, filteredArrivals?.length, filteredDepartures?.length]);
 
-  const arrTotalPages = Math.max(
-    1,
-    Math.ceil((arrivals?.length || 0) / rowsCount),
-  );
-  const depTotalPages = Math.max(
-    1,
-    Math.ceil((departures?.length || 0) / rowsCount),
-  );
+  const arrTotalPages = Math.max(1, Math.ceil((filteredArrivals?.length || 0) / rowsCount));
+  const depTotalPages = Math.max(1, Math.ceil((filteredDepartures?.length || 0) / rowsCount));
 
   useEffect(() => {
     if (arrPage >= arrTotalPages) setArrPage(0);
@@ -98,6 +103,12 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   useEffect(() => {
     if (depPage >= depTotalPages) setDepPage(0);
   }, [depTotalPages, depPage]);
+
+  // Reset pages when filter changes so user sees first page of results
+  useEffect(() => {
+    setArrPage(0)
+    setDepPage(0)
+  }, [filterText])
 
   useEffect(() => {
     // If interval is 0, keep both tables fixed to the first page
@@ -166,6 +177,22 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           <thead>
             <tr>
               <th colSpan={5} style={{ padding: 4 }}>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <span>Filtr:</span>
+          <input
+            type="text"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            placeholder="callsign / origin / dest"
+            style={{ width: "12rem" }}
+          />
+        </label>
                 <div
                   style={{
                     display: "flex",
@@ -215,8 +242,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </thead>
           <tbody>
             {Array.from({ length: rowsCount }).map((_, idx) => {
-              const pageStart = arrPage * rowsCount;
-              const item = arrivals[pageStart + idx];
+              const pageStart = arrPage * rowsCount
+              const item = filteredArrivals[pageStart + idx];
               if (item) {
                 const {
                   callsignSplit,
@@ -349,8 +376,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
           </thead>
           <tbody>
             {Array.from({ length: rowsCount }).map((_, idx) => {
-              const pageStart = depPage * rowsCount;
-              const item = departures[pageStart + idx];
+              const pageStart = depPage * rowsCount
+              const item = filteredDepartures[pageStart + idx];
               if (item) {
                 const {
                   callsignSplit,
