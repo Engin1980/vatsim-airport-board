@@ -79,14 +79,25 @@ export default function AirportSelect({ airports }: AirportSelectProps) {
   return (
     <div style={{ padding: "1rem" }}>
       <h2>Select an airport</h2>
-      <div>
-        <div style={{ margin: "0.5rem 0 1rem" }}>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <div
+          style={{
+            margin: "0.5rem 0 1rem",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "100%",
+            maxWidth: 800,
+            boxSizing: "border-box",
+            padding: "0 1rem",
+          }}
+        >
           {history.length > 0 && (
             <div style={{ marginBottom: "0.5rem" }}>
               <div style={{ fontSize: "0.95rem", marginBottom: "0.25rem" }}>
                 Historie
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
                 {history.map((code) => (
                   <div
                     key={code}
@@ -132,7 +143,7 @@ export default function AirportSelect({ airports }: AirportSelectProps) {
               </div>
             </div>
           )}
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "center", width: "100%" }}>
             <label
               style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
             >
