@@ -71,6 +71,49 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [autoRotatePages, setAutoRotatePages] = useState(true);
   const [rotateIntervalSec, setRotateIntervalSec] = useState<number>(15);
 
+  // Persistable UI settings key (per-ICAO)
+  const settingsKey = `airportBoardSettings:${icao.toUpperCase()}`;
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Load persisted settings for this airport (if any)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(settingsKey);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s) {
+          if (s.timeMode) setTimeMode(s.timeMode);
+          if (typeof s.autoRotatePages === "boolean") setAutoRotatePages(s.autoRotatePages);
+          if (typeof s.rotateIntervalSec === "number") setRotateIntervalSec(s.rotateIntervalSec);
+          if (typeof s.rowsCount === "number") setRowsCount(s.rowsCount);
+          if (typeof s.showAllDepartures === "boolean") setShowAllDepartures(s.showAllDepartures);
+        }
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setSettingsLoaded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [icao]);
+
+  // Save settings when they change (but only after initial load to avoid clobbering)
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    try {
+      const s = {
+        timeMode,
+        autoRotatePages,
+        rotateIntervalSec,
+        rowsCount,
+        showAllDepartures,
+      };
+      localStorage.setItem(settingsKey, JSON.stringify(s));
+    } catch (e) {
+      // ignore
+    }
+  }, [settingsLoaded, settingsKey, timeMode, autoRotatePages, rotateIntervalSec, rowsCount, showAllDepartures]);
+
   // header is rendered inside table thead so it lines up naturally
 
   const prevRowsCountArrRef = useRef<number>(rowsCount);
