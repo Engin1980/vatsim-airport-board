@@ -1,5 +1,16 @@
 import type { Airport } from "../models/airport";
 
+const CSV_NORMALIZATION_REPLACEMENTS: Array<[string, string]> = [
+  ["–—", "-"],
+  ["–", "-"],
+  ["—", "-"],
+  ["ł", "l"],
+  ["Ł", "L"],
+  ["æ", "ae"],
+  ["Æ", "AE"],
+  ["ç", "c"],
+];
+
 function parseLine(line: string): string[] {
   const result: string[] = [];
   let cur = "";
@@ -55,10 +66,11 @@ export async function loadAirports(): Promise<Map<string, Airport>> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
   let text = await res.text();
-  // Normalize common dash characters (en-dash, em-dash) to simple hyphen
-  text = text.replace(/[–—]/g, "-");
-  text = text.replace(/[ł]/g, "l"); // Replace Polish ł with l to avoid encoding issues
-  text = text.replace(/[Ł]/g, "L");
+  // Normalize characters using the reusable replacements list
+  for (const [find, replace] of CSV_NORMALIZATION_REPLACEMENTS) {
+    if (!find) continue;
+    text = text.split(find).join(replace);
+  }
 
   const rows = parseCSV(text);
   // Try to dynamically import tz-lookup to determine airport timezones.
