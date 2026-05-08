@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# VATSIM Airport Board — co to je
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+  VATSIM Airport Board je jednoduchá webová tabule sloužící k přehledu příletů a odletů pro vybrané letiště. Je navržena tak, aby se dala spustit lokálně i nasadit jako malá veřejná stránka — hlavní zaměření je na čitelné zobrazení letů, jednoduché stránkování a možnost přepínat zdroje dat.
 
-Currently, two official plugins are available:
+  Pro koho je to užitečné
+  - Pro provozovatele virtuálních letišť, kteří chtějí rychlou nástěnku s přehledem aktuálních letů.
+  - Pro streamery / pozorovatele provozu, kteří chtějí zobrazit tabuli na druhém monitoru nebo do streamu.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+  Co umí (rychlý přehled)
+  - Zobrazuje dvě oddělené tabule: přílety (Arrivals) a odlety (Departures).
+  - Podporuje stránkování řádků s automatickým otáčením stránek.
+  - Každá tabule má vlastní rotaci — interval pro první stránku a interval pro ostatní stránky lze nastavit.
+  - Možnost zobrazit „vzdálené“ odlety a měnit počet řádků na stránku.
 
-## React Compiler
+## Vyzkoušení
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Aplikace je dostupná na [https://vatsim-airport-board-dusky.vercel.app](https://vatsim-airport-board-dusky.vercel.app/#/airport/BIIS).
 
-## Expanding the ESLint configuration
+## Vlastní lokální instalace
+  
+  Jak začít (rychle)
+  1) Nainstalujte závislosti:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+  ```bash
+  npm install
+  ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+  2) Spusťte vývojový server a otevřete prohlížeč na `http://localhost:5173`:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+  ```bash
+  npm run dev
+  ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+  3) Do produkce sestavíte pomocí:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+  ```bash
+  npm run build
+  npm run preview
+  ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Popis použití
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+  Jak aplikaci používat
+  - Na úvodní stránce vyberte letiště (ICAO) ze seznamu.
+  - Na stránce tabule můžete pomocí ovládacích prvků v dolním panelu upravit: počet řádků, zapnout/vypnout rotaci stránek, nastavit délku zobrazení první stránky a délku pro ostatní stránky, a zobrazit vzdálené odlety.
+  - Nastavení jsou ukládána do `localStorage` pro každý vybraný ICAO zvlášť.
+
+  Kde jsou data
+  - Seznam letišť: `public/data/airports.csv` (aplikace jej načítá při startu a převádí na mapu ICAO → airport).
+  - Volitelný zdroj reálných dat: VATSIM v3 feed (služba je připravená v `src/services/vatsimService.ts`).
+
+  ## Přispívání
+  - Najdete-li chybu nebo chcete funkci, otevřete issue nebo PR s popisem změny.
+
+  ## Krátce o technologii
+  Technické detaily nejsou nutné pro uživatele tabule, ale v projektu najdete běžné webové technologie: React + TypeScript a build přes Vite. Hlavní části aplikace jsou v `src/pages/AirportBoard` (UI tabule) a `src/services` (data loader).
+
+  ## Poznámky
+  - Projekt nemá v repozitáři explicitní `LICENSE` — přidejte, pokud chcete projekt publikovat pod konkrétní licencí.
+
+  - Soubor s interními instrukcemi (vývoj): viz `./.github/copilot-instructions.md`.
