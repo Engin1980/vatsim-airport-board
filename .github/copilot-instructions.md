@@ -31,7 +31,7 @@ Tests: No test script or test runner is configured in package.json. If tests are
 
 ## Project-specific data inputs
 - Flights JSON: The app consumes a JSON file with the current flights board. Provide the JSON file to the assistant when ready. Recommended placement during development: src/data/flights.json. Alternatively, serve it from a local API endpoint.
-- Airports list: The repository uses an airports CSV at data/airports.csv. It should include standard identifiers (IATA/ICAO), airport name, city, and country so the app can resolve display names from flight records that reference airports by code.
+- Airports list: The repository uses an airports CSV at public/data/airports.csv (served at /data/airports.csv). It should include standard identifiers (IATA/ICAO), airport name, city, and country so the app can resolve display names from flight records that reference airports by code.
 
 Assistant note: The maintainer will supply the flights JSON later; the assistant has saved this context for subsequent tasks and will use the airports CSV to resolve airport names.
 
