@@ -71,12 +71,56 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
         <span style={{ marginLeft: 8, color: "#666", fontSize: "0.95rem" }}>
           VATSIM Airport Board
         </span>
-        <span id="sim-warning" style={{ marginLeft: 8, color: "#F00", fontSize: "0.95rem" }}>
-          Simulation Only, No Real-World Data
-        </span>
+        {/** Click to dismiss the simulation warning */}
+        {/** Visible by default; clicking hides it */}
+        {typeof window !== "undefined" && <SimWarning />}
       </h1>
     </header>
   );
+
+  // Inline dismissible warning component so it can use hooks
+  function SimWarning() {
+    const [visible, setVisible] = useState<boolean>(() => {
+      try {
+        const v = localStorage.getItem("simWarningHidden");
+        return v !== "true";
+      } catch (e) {
+        return true;
+      }
+    });
+
+    const hide = () => {
+      setVisible(false);
+      try {
+        localStorage.setItem("simWarningHidden", "true");
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    if (!visible) return null;
+
+    return (
+      <span
+        id="sim-warning"
+        role="button"
+        tabIndex={0}
+        onClick={hide}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") hide();
+        }}
+        style={{
+          marginLeft: 8,
+          color: "#F00",
+          fontSize: "0.95rem",
+          cursor: "pointer",
+        }}
+        aria-label="Dismiss simulation warning"
+      >
+        Simulation Only, No Real-World Data
+      </span>
+    );
+  }
 
   const [arrPage, setArrPage] = useState(0);
   const [depPage, setDepPage] = useState(0);
@@ -770,6 +814,19 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
               style={{ width: "2rem" }}
             />
           </label>
+
+          <span
+            id="sim-warning"
+            style={{
+              color: "#F00",
+              fontSize: "0.95rem",
+              cursor: "pointer",
+              textAlign: "right",
+              marginLeft: "auto",
+            }}
+          >
+            Simulation Only, No Real-World Data
+          </span>
 
           <div
             style={{
