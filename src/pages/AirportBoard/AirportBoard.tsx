@@ -49,7 +49,16 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const headerEl = (
     <header className="app-header">
       <h1>
-        <a href="#/" aria-label="Back to airport select" style={{ cursor: "pointer", marginRight: 8, color: "#666", textDecoration: 'none' }}>
+        <a
+          href="#/"
+          aria-label="Back to airport select"
+          style={{
+            cursor: "pointer",
+            marginRight: 8,
+            color: "#666",
+            textDecoration: "none",
+          }}
+        >
           ⇖
         </a>
         {airportShortName ? (
@@ -62,6 +71,9 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
         <span style={{ marginLeft: 8, color: "#666", fontSize: "0.95rem" }}>
           VATSIM Airport Board
         </span>
+        <span id="sim-warning" style={{ marginLeft: 8, color: "#F00", fontSize: "0.95rem" }}>
+          Simulation Only, No Real-World Data
+        </span>
       </h1>
     </header>
   );
@@ -70,7 +82,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   const [depPage, setDepPage] = useState(0);
   const [autoRotatePages, setAutoRotatePages] = useState(true);
   const [firstPageDurationSec, setFirstPageDurationSec] = useState<number>(15);
-  const [otherPagesIntervalSec, setOtherPagesIntervalSec] = useState<number>(15);
+  const [otherPagesIntervalSec, setOtherPagesIntervalSec] =
+    useState<number>(15);
 
   // Persistable UI settings key (per-ICAO)
   const settingsKey = `airportBoardSettings:${icao.toUpperCase()}`;
@@ -84,11 +97,15 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
         const s = JSON.parse(raw);
         if (s) {
           if (s.timeMode) setTimeMode(s.timeMode);
-          if (typeof s.autoRotatePages === "boolean") setAutoRotatePages(s.autoRotatePages);
-          if (typeof s.firstPageDurationSec === "number") setFirstPageDurationSec(s.firstPageDurationSec);
-          if (typeof s.otherPagesIntervalSec === "number") setOtherPagesIntervalSec(s.otherPagesIntervalSec);
+          if (typeof s.autoRotatePages === "boolean")
+            setAutoRotatePages(s.autoRotatePages);
+          if (typeof s.firstPageDurationSec === "number")
+            setFirstPageDurationSec(s.firstPageDurationSec);
+          if (typeof s.otherPagesIntervalSec === "number")
+            setOtherPagesIntervalSec(s.otherPagesIntervalSec);
           if (typeof s.rowsCount === "number") setRowsCount(s.rowsCount);
-          if (typeof s.showAllDepartures === "boolean") setShowAllDepartures(s.showAllDepartures);
+          if (typeof s.showAllDepartures === "boolean")
+            setShowAllDepartures(s.showAllDepartures);
         }
       }
     } catch (e) {
@@ -115,7 +132,16 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     } catch (e) {
       // ignore
     }
-  }, [settingsLoaded, settingsKey, timeMode, autoRotatePages, firstPageDurationSec, otherPagesIntervalSec, rowsCount, showAllDepartures]);
+  }, [
+    settingsLoaded,
+    settingsKey,
+    timeMode,
+    autoRotatePages,
+    firstPageDurationSec,
+    otherPagesIntervalSec,
+    rowsCount,
+    showAllDepartures,
+  ]);
 
   // header is rendered inside table thead so it lines up naturally
 
@@ -214,7 +240,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     const schedule = (nextPage: number) => {
       clearExisting();
       if (cancelled) return;
-      const delay = nextPage === 0 ? firstPageDurationSec : otherPagesIntervalSec;
+      const delay =
+        nextPage === 0 ? firstPageDurationSec : otherPagesIntervalSec;
       timeoutIdRef.id = window.setTimeout(tick, Math.max(0, delay) * 1000);
     };
 
@@ -234,7 +261,12 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       cancelled = true;
       clearExisting();
     };
-  }, [autoRotatePages, firstPageDurationSec, otherPagesIntervalSec, arrTotalPages]);
+  }, [
+    autoRotatePages,
+    firstPageDurationSec,
+    otherPagesIntervalSec,
+    arrTotalPages,
+  ]);
 
   useEffect(() => {
     if (!autoRotatePages) return;
@@ -260,7 +292,8 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
     const schedule = (nextPage: number) => {
       clearExisting();
       if (cancelled) return;
-      const delay = nextPage === 0 ? firstPageDurationSec : otherPagesIntervalSec;
+      const delay =
+        nextPage === 0 ? firstPageDurationSec : otherPagesIntervalSec;
       timeoutIdRef.id = window.setTimeout(tick, Math.max(0, delay) * 1000);
     };
 
@@ -280,7 +313,12 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
       cancelled = true;
       clearExisting();
     };
-  }, [autoRotatePages, firstPageDurationSec, otherPagesIntervalSec, depTotalPages]);
+  }, [
+    autoRotatePages,
+    firstPageDurationSec,
+    otherPagesIntervalSec,
+    depTotalPages,
+  ]);
 
   // Current time rendering moved to `CurrentTime` component.
 
