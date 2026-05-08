@@ -154,7 +154,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
   if (loadingData) return <div>Loading flights...</div>;
 
   return (
-    <div style={{ padding: "0.01rem" }}>
+    <div style={{ padding: "0.01rem", paddingBottom: "4rem" }}>
       <section style={{ marginTop: "1rem" }}>
         <table
           style={{
@@ -425,13 +425,20 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
 
       <div
         style={{
-          marginTop: "1.5rem",
-          paddingTop: "0.5rem",
-          borderTop: "1px solid #eee",
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: "0.75rem 1rem",
+          borderTop: "1px solid var(--border)",
           display: "flex",
           gap: "1rem",
           alignItems: "center",
           flexWrap: "wrap",
+          background: "var(--bg)",
+          color: "var(--text)",
+          zIndex: 1000,
+          boxShadow: "0 -2px 6px rgba(0,0,0,0.05)",
         }}
       >
         <label
@@ -478,7 +485,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             checked={autoRotatePages}
             onChange={(e) => setAutoRotatePages(e.target.checked)}
           />
-          <span>Auto-stránkování</span>
+          <span>Stránkování</span>
         </label>
         <label
           style={{
@@ -487,7 +494,7 @@ const AirportBoardComponent = ({ icao }: AirportBoardProps) => {
             gap: "0.5rem",
           }}
         >
-          <span>Interval strany (s):</span>
+          <span> Interval (s):</span>
           <input
             type="number"
             min={0}

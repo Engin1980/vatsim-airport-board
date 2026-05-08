@@ -57,6 +57,7 @@ export async function loadAirports(): Promise<Map<string, Airport>> {
   let text = await res.text()
   // Normalize common dash characters (en-dash, em-dash) to simple hyphen
   text = text.replace(/[–—]/g, '-')
+  text = text.replace(/[ł]/g, 'l') // Replace Polish ł with l to avoid encoding issues
   const rows = parseCSV(text)
   // Try to dynamically import tz-lookup to determine airport timezones.
   let tzlookup: ((lat: number, lon: number) => string) | null = null
