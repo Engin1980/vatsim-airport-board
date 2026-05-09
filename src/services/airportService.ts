@@ -9,6 +9,7 @@ const CSV_NORMALIZATION_REPLACEMENTS: Array<[string, string]> = [
   ["æ", "ae"],
   ["Æ", "AE"],
   ["ç", "c"],
+  ["đ", "d"],
 ];
 
 function parseLine(line: string): string[] {
